@@ -10,5 +10,3 @@
 
 * [Introduction](http://developer.openmhealth.org/) to the Open mHealth technical approach.
 * [Developer Wiki](https://github.com/openmhealth/developer/wiki) with our specifications.
-
-
