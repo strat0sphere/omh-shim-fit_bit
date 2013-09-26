@@ -1,12 +1,3 @@
-## Open mHealth Reference Implementation and Documentation Repository
+## Open mHealth Shim Project
 
-### Source code
-
-* DSU (Data Storage Unit) RI - this repository
-* DPU (Data Processing Unit) RI - forthcoming 
-* DVU (Data Visualization Unit) RI - forthcoming
-
-### Documentation
-
-* [Introduction](http://developer.openmhealth.org/) to the Open mHealth technical approach.
-* [Developer Wiki](https://github.com/openmhealth/developer/wiki) with our specifications.
+The source code for the shim project which is a fork of the reference implementation to add functionality.
