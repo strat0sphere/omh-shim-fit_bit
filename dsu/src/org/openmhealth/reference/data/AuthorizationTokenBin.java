@@ -39,10 +39,10 @@ public abstract class AuthorizationTokenBin {
 	}
 	
 	/**
-	 * Stores an existing authorization code.
+	 * Stores an existing authorization token.
 	 * 
 	 * @param token
-	 *        The code to be saved.
+	 *        The token to be saved.
 	 * 
 	 * @throws OmhException
 	 *         The code is null.

@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.openmhealth.reference.data.DataSet;
 import org.openmhealth.reference.data.Registry;
@@ -28,6 +30,8 @@ import org.springframework.transaction.support.DefaultTransactionDefinition;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * <p>
@@ -294,7 +298,9 @@ public class SqlDataSet extends DataSet implements SqlDaoInterface {
 											"Error decoding the data.",
 											e);
 								}
-								// FIXME: Apply the column list.
+								
+								// Apply the column list.
+								applyColumnList(columnList, data);
 								
 								// Create a Data object and return it.
 								return
@@ -461,5 +467,65 @@ public class SqlDataSet extends DataSet implements SqlDaoInterface {
 								"ON UPDATE CASCADE " +
 								"ON DELETE CASCADE" +
 				")";
+	}
+	
+	/**
+	 * Applies a column list onto a data element.
+	 * 
+	 * @param columnList
+	 *        The column list to apply.
+	 * 
+	 * @param data
+	 *        The data element on which it should be applied.
+	 */
+	private static void applyColumnList(
+		final ColumnList columnList,
+		final JsonNode data) {
+		
+		// If the column list is null, all elements are desired and the data
+		// should not be modified.
+		if(columnList == null) {
+			return;
+		}
+		
+		// If it is an object, check the fields to ensure that only the desired
+		// ones exist.
+		if(data.isObject()) {
+			// Get the list of fields.
+			Set<String> children = columnList.getChildren();
+			
+			// Cast the object and get the list of fields.
+			ObjectNode object = (ObjectNode) data;
+			Iterator<String> fieldNames = object.fieldNames();
+			
+			// For each field in the data,
+			while(fieldNames.hasNext()) {
+				// Get the field name.
+				String fieldName = fieldNames.next();
+				
+				// If the field name is one of the children, recurse on that
+				// object.
+				if(children.contains(fieldName)) {
+					applyColumnList(
+						columnList.getChild(fieldName),
+						object.get(fieldName));
+				}
+				// If the field name is not one of the children, remove it.
+				else {
+					object.remove(fieldName);
+				}
+			}
+		}
+		// If the data is an array, recurse on each element in the array.
+		else if(data.isArray()) {
+			ArrayNode array = (ArrayNode) data;
+			
+			Iterator<JsonNode> elements = array.iterator();
+			
+			while(elements.hasNext()) {
+				applyColumnList(columnList, elements.next());
+			}
+		}
+		// Otherwise, it is simply a value node and should not be removed.
 	}
 }

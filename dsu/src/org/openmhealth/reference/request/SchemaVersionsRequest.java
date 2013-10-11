@@ -2,11 +2,15 @@ package org.openmhealth.reference.request;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.openmhealth.reference.data.Registry;
 import org.openmhealth.reference.domain.MultiValueResult;
+import org.openmhealth.reference.domain.MultiValueResultAggregator;
 import org.openmhealth.reference.exception.OmhException;
+import org.openmhealth.shim.Shim;
+import org.openmhealth.shim.ShimRegistry;
 
 /**
  * <p>
@@ -62,15 +66,51 @@ public class SchemaVersionsRequest extends ListRequest<Long> {
 		else {
 			setServiced();
 		}
+		
+		// Get the domain from the schema ID.
+		String domain;
+		try {
+			domain = parseDomain(schemaId);
+		}
+		catch(IllegalArgumentException e) {
+			throw new OmhException("The schema ID is invalid: " + schemaId, e);
+		}
 
 		// Get the schema versions.
-		MultiValueResult<Long> result =
-			Registry
-				.getInstance()
-					.getSchemaVersions(
-						schemaId, 
-						getNumToSkip(), 
-						getNumToReturn());
+		MultiValueResult<Long> result;
+		// If it can be handled by a shim, use that.
+		if(ShimRegistry.hasDomain(domain)) {
+			// Get the shim.
+			Shim shim = ShimRegistry.getShim(domain);
+			
+			// Get all of the visible versions.
+			List<Long> versions = shim.getSchemaVersions(schemaId);
+			
+			// Sort the list of versions.
+			Collections.sort(versions);
+			
+			// Generate the paged result.
+			versions =
+				versions
+					.subList(
+						(int) Math.min(getNumToSkip(), versions.size()),
+						(int) Math.min(
+							getNumToSkip() + getNumToReturn(),
+							versions.size()));
+			
+			// Create the result from the sorted, paged list of versions.
+			result = (new MultiValueResultAggregator<Long>(versions)).build(); 
+		}
+		// Otherwise, query our internal schemas.
+		else {
+			result =
+				Registry
+					.getInstance()
+						.getSchemaVersions(
+							schemaId, 
+							getNumToSkip(), 
+							getNumToReturn());
+		}
 		
 		// Set the meta-data.
 		Map<String, Object> metaData = new HashMap<String, Object>();

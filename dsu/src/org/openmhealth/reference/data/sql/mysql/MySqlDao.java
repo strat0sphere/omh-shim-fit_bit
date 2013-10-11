@@ -2,6 +2,7 @@ package org.openmhealth.reference.data.sql.mysql;
 
 import java.util.Properties;
 
+import org.openmhealth.reference.data.Dao;
 import org.openmhealth.reference.data.sql.SqlDao;
 
 /**

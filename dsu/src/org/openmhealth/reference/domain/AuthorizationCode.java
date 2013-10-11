@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.joda.time.DateTime;
+import org.openmhealth.reference.data.AuthorizationCodeResponseBin;
 import org.openmhealth.reference.data.ThirdPartyBin;
 import org.openmhealth.reference.exception.OmhException;
 
@@ -301,5 +302,16 @@ public class AuthorizationCode implements OmhObject {
 	 */
 	public String getState() {
 		return state;
+	}
+	
+	/**
+	 * Returns the authorization code response or null if no response has been
+	 * made yet.
+	 * 
+	 * @return The authorization code response or null if no response has been
+	 *         made yet.
+	 */
+	public AuthorizationCodeResponse getResponse() {
+		return AuthorizationCodeResponseBin.getInstance().getResponse(code);
 	}
 }

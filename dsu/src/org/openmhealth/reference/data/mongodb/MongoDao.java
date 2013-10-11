@@ -108,6 +108,8 @@ public class MongoDao extends Dao {
 		new MongoAuthorizationCodeResponseBin();
 		new MongoAuthorizationTokenBin();
 		new MongoDataSet();
+		new MongoExternalAuthorizationInformationBin();
+		new MongoExternalAuthorizationTokenBin();
 		new MongoRegistry();
 		new MongoThirdPartyBin();
 		new MongoUserBin();

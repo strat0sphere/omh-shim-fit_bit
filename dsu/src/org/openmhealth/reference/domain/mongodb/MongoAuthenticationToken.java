@@ -56,7 +56,7 @@ public class MongoAuthenticationToken
 	 * Creates an {@link AuthenticationToken} object via injection from the
 	 * data layer.
 	 * 
-	 * @param id
+	 * @param dbId
 	 *        The database ID for this authentication token.
 	 * 
 	 * @param token

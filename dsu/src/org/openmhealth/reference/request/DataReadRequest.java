@@ -20,17 +20,22 @@ import java.util.List;
 import java.util.Map;
 
 import org.openmhealth.reference.data.DataSet;
+import org.openmhealth.reference.data.ExternalAuthorizationTokenBin;
 import org.openmhealth.reference.data.Registry;
 import org.openmhealth.reference.domain.AuthenticationToken;
 import org.openmhealth.reference.domain.AuthorizationToken;
 import org.openmhealth.reference.domain.ColumnList;
 import org.openmhealth.reference.domain.Data;
+import org.openmhealth.reference.domain.ExternalAuthorizationToken;
 import org.openmhealth.reference.domain.MultiValueResult;
+import org.openmhealth.reference.domain.MultiValueResultAggregator;
 import org.openmhealth.reference.exception.InvalidAuthenticationException;
 import org.openmhealth.reference.exception.InvalidAuthorizationException;
 import org.openmhealth.reference.exception.NoSuchSchemaException;
 import org.openmhealth.reference.exception.OmhException;
 import org.openmhealth.reference.servlet.Version1;
+import org.openmhealth.shim.Shim;
+import org.openmhealth.shim.ShimRegistry;
 
 /**
  * <p>
@@ -100,10 +105,10 @@ public class DataReadRequest extends ListRequest<Data> {
 		
 		super(numToSkip, numToReturn);
 		
-		if(authenticationToken == null) {
+		if((authenticationToken == null) && (authorizationToken == null)) {
 			throw
 				new InvalidAuthenticationException(
-					"No authentication token was provided.");
+					"No authentication information was provided.");
 		}
 		if(schemaId == null) {
 			throw new OmhException("The schema ID is missing.");
@@ -113,14 +118,8 @@ public class DataReadRequest extends ListRequest<Data> {
 		this.authorizationToken = authorizationToken;
 		this.schemaId = schemaId;
 		this.version = version;
+		this.owner = owner;
 		this.columnList = new ColumnList(columnList);
-		
-		if(owner == null) {
-			this.owner = authenticationToken.getUsername();
-		}
-		else {
-			this.owner = owner;
-		}
 	}
 
 	/**
@@ -137,11 +136,81 @@ public class DataReadRequest extends ListRequest<Data> {
 			setServiced();
 		}
 		
+		// Create a handle for the validated user-name of the user whose data
+		// is desired.
+		String username = owner;
+		
+		// Get the user-name associated with the authentication token, if one
+		// was given.
+		String authenticationUsername = null;
+		if(authenticationToken != null) {
+			authenticationUsername = authenticationToken.getUsername();
+		}
+		
+		// Get the user-name associated with the authorization token, if one
+		// was given.
+		String authorizationUsername = null;
+		if(authorizationToken != null) {
+			authorizationUsername =
+				authorizationToken
+					.getAuthorizationCodeVerification()
+					.getOwnerUsername();
+		}
+		
+		// If the requester did not give a user-name use the authentication and
+		// authorization tokens to infer one.
+		if(username == null) {
+			// First, check the authorization token, which should only ever be
+			// given when information about a user other than the requester is
+			// desired.
+			if(authorizationUsername != null) {
+				username = authorizationUsername;
+			}
+			// If that wasn't given, fall back to using the user-name
+			// associated with the authentication token.
+			else if(authenticationUsername != null) {
+				username = authenticationUsername;
+			}
+			// It is illegal for this call to ever be in a state where an
+			// authentication token and an authorization token were not given.
+			else {
+				throw
+					new IllegalStateException(
+						"A request that always requires authentication was " +
+							"being processed without any authentication " +
+							"information.");
+			}
+		}
+		// Otherwise, validate that the requesting user has provided sufficient
+		// permissions to read data about the user they are asking.
+		else if(
+			(
+				(authenticationUsername == null)
+				&&
+				(authorizationUsername == null)
+			)
+			||
+			(
+				username.equals(authenticationUsername)
+				&&
+				username.equals(authorizationUsername)
+			)) {
+			
+			throw
+				new InvalidAuthorizationException(
+					"Insufficient credentials were provided to read the " +
+						"requested user's data.");
+		}
+		
+		// Get the domain.
+		String domain = parseDomain(schemaId);
+		
 		// Check to be sure the schema is known.
 		if(
-			Registry
+			(! ShimRegistry.hasDomain(domain)) &&
+			(Registry
 				.getInstance()
-				.getSchemas(schemaId, version, 0, 1).count() == 0) {
+				.getSchemas(schemaId, version, 0, 1).count() == 0)) {
 			
 			throw
 				new NoSuchSchemaException(
@@ -152,51 +221,58 @@ public class DataReadRequest extends ListRequest<Data> {
 						"', pair is unknown.");
 		}
 		
-		// If the owner value is not the same as the requesting user, validate
-		// that the authorization token grants them access.
-		if(! authenticationToken.getUsername().equals(owner)) {
-			// Ensure that the given authorization token grants access to the
-			// given schema.
-			if(
-				! authorizationToken
-					.getAuthorizationCode()
-					.getScopes()
-					.contains(schemaId)) {
-				
+		// Get the data.
+		MultiValueResult<Data> result;
+		// Check if a shim should handle the request.
+		if(ShimRegistry.hasDomain(domain)) {
+			// Get the shim.
+			Shim shim = ShimRegistry.getShim(domain);
+			
+			// Lookup the user's authorization code.
+			ExternalAuthorizationToken token =
+				ExternalAuthorizationTokenBin
+					.getInstance()
+					.getToken(username, domain);
+			
+			// If the token does not exist, return an error. Clients should
+			// first check to be sure that the user has already authorized this
+			// domain.
+			if(token == null) {
 				throw
-					new InvalidAuthorizationException(
-						"The authorization token does not grant access to " +
-							"the given schema: " +
-							schemaId);
+					new OmhException(
+						"The user has not yet authorized this domain.");
 			}
 			
-			// Ensure that the given authorization token grants access to the
-			// user in question.
-			if(
-				! authorizationToken
-					.getAuthorizationCodeVerification()
-					.getOwnerUsername()
-					.equals(owner)) {
-				
-				throw
-					new InvalidAuthorizationException(
-						"The authorization token does not grant access to " +
-							"the given user's data: " +
-							owner);
-			}
+			// Get the data from the shim.
+			List<Data> resultList =
+				shim
+					.getData(
+						schemaId,
+						version,
+						token,
+						null,
+						null,
+						columnList,
+						getNumToSkip(),
+						getNumToReturn());
+			
+			// Convert the List object into a MultiValueResult object.
+			result =
+				(new MultiValueResultAggregator<Data>(resultList)).build();
 		}
-		
-		// Get the data.
-		MultiValueResult<Data> result =
-			DataSet
-				.getInstance()
-				.getData(
-					owner, 
-					schemaId, 
-					version, 
-					columnList, 
-					getNumToSkip(), 
-					getNumToReturn());
+		// Otherwise, handle the request ourselves.
+		else {
+			result =
+				DataSet
+					.getInstance()
+					.getData(
+						owner, 
+						schemaId, 
+						version, 
+						columnList, 
+						getNumToSkip(), 
+						getNumToReturn());
+		}
 		
 		// Set the meta-data.
 		Map<String, Object> metaData = new HashMap<String, Object>();

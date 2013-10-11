@@ -15,6 +15,7 @@
  ******************************************************************************/
 package org.openmhealth.reference.domain;
 
+
 /**
  * <p>
  * This represents a collection of results that are being returned.

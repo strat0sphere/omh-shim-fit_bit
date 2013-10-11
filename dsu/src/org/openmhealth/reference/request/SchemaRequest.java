@@ -23,6 +23,8 @@ import org.openmhealth.reference.data.Registry;
 import org.openmhealth.reference.domain.Schema;
 import org.openmhealth.reference.exception.NoSuchSchemaException;
 import org.openmhealth.reference.exception.OmhException;
+import org.openmhealth.shim.Shim;
+import org.openmhealth.shim.ShimRegistry;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -84,9 +86,30 @@ public class SchemaRequest extends Request<Concordia> {
 			setServiced();
 		}
 		
+		// Get the domain.
+		String domain;
+		try {
+			domain = parseDomain(schemaId);
+		}
+		catch(IllegalArgumentException e) {
+			throw new OmhException("The schema ID is invalid.", e);
+		}
+		
 		// Get the schema.
-		Schema schema =
-			Registry.getInstance().getSchema(schemaId, schemaVersion);
+		Schema schema = null;
+		// If a shim can handle it, use that.
+		if(ShimRegistry.hasDomain(domain)) {
+			// Get the shim.
+			Shim shim = ShimRegistry.getShim(domain);
+			
+			// Use the shim to build the schema.
+			schema = shim.getSchema(schemaId, schemaVersion);
+		}
+		// Otherwise, check our internal registry.
+		else {
+			schema =
+				Registry.getInstance().getSchema(schemaId, schemaVersion);
+		}
 		
 		// Make sure the schema exists.
 		if(schema == null) {

@@ -26,6 +26,7 @@ import org.openmhealth.reference.util.OmhObjectMapper.JacksonFieldFilter;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
@@ -223,6 +224,7 @@ public class User implements OmhObject {
 	 * 
 	 * @return The user's hashed password. 
 	 */
+	@JsonIgnore
 	public String getPassword() {
 		return password;
 	}

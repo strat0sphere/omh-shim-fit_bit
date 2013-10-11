@@ -106,8 +106,9 @@ public class OmhObjectMapper extends ObjectMapper {
 	 * Registers a new field filter and ensures that its desired fields are
 	 * never serialized.
 	 * 
-	 * @param filter
-	 *        The filter to add to this ObjectMapper.
+	 * @param filterClass
+	 *        The class to whose filters should be registered to this
+	 *        ObjectMapper.
 	 */
     public static synchronized void register(final Class<?> filterClass) {
     	// Sanitize the input.

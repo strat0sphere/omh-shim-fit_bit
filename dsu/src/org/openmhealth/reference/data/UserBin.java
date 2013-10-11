@@ -64,30 +64,6 @@ public abstract class UserBin {
 	 *         internal error creating the user.
 	 */
 	public abstract void createUser(final User user) throws OmhException;
-	
-//	/**
-//	 * Creates a registration for a user.
-//	 * 
-//	 * @param user
-//	 *        The user that is being registered.
-//	 * 
-//	 * @throws OmhException
-//	 *         There was an error creating the registration.
-//	 */
-//	public abstract void registerUser(final User user) throws OmhException;
-//	
-//	/**
-//	 * Activates an account that has not yet been activated and has the given
-//	 * registration ID.
-//	 * 
-//	 * @param registrationId
-//	 *        The registration ID for the user to use to activate their
-//	 *        account.
-//	 * 
-//	 * @throws OmhException
-//	 *         There was an error activating the user.
-//	 */
-//	public abstract void activateUser(final User user) throws OmhException;
 
 	/**
 	 * Retrieves the {@link User} object from a user-name.
@@ -125,8 +101,6 @@ public abstract class UserBin {
 	 * 
 	 * @param user
 	 *        The user to be updated.
-	 * 
-	 * @return The updated user.
 	 * 
 	 * @throws OmhException
 	 *         There was an error updating the user.

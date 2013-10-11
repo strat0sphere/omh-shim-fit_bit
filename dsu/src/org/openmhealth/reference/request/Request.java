@@ -71,6 +71,54 @@ public abstract class Request<T> {
 	public T getData() {
 		return data;
 	}
+	
+	/**
+	 * Parses a given schema ID and returns the domain. The domain is the part
+	 * after the "omh:" (which is how all schema IDs should begin) and up until
+	 * the next ":".
+	 * 
+	 * @param schemaId
+	 *        The schema ID to parse.
+	 * 
+	 * @return The domain part of the schema ID.
+	 * 
+	 * @throws IllegalArgumentException
+	 *         The schema ID is not valid schema ID.
+	 */
+	public String parseDomain(final String schemaId)
+		throws IllegalArgumentException {
+		
+		// Validate the input.
+		if(schemaId == null) {
+			throw new IllegalArgumentException("The schema ID is null.");
+		}
+		
+		// Ensure that the schema ID begins with the required "omh:".
+		if(! schemaId.startsWith("omh:")) {
+			throw
+				new IllegalArgumentException(
+					"The schema ID is not valid. It must begin with " +
+						"\"omh:\".");
+		}
+		
+		// Ensure that there is at least one character after the prefix.
+		if(schemaId.length() <= 4) {
+			throw
+				new IllegalArgumentException(
+					"The schema must include a value after the \"omh:\" " +
+						"prefix.");
+		}
+		
+		// Get the index of the colon immediately after the domain or just the
+		// end of the string if no such colon exists.
+		int domainColon = schemaId.indexOf(':', 4);
+		if(domainColon == -1) {
+			domainColon = schemaId.length();
+		}
+		
+		// Create a sub-string that is the domain.
+		return schemaId.substring(4, domainColon);
+	}
 
 	/**
 	 * Returns whether or not this request has already been serviced.

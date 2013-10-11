@@ -2,12 +2,18 @@
 <project
     name="Open mHealth Reference Implementation"
     basedir="."
-    default="dist">
+    default="all">
+	
+	<!-- Set the version of this build. -->
+	<property name="version" value="1.0.0" />
 
     <!-- Create the properties to be used throughout this build file. -->
     <property name="dist" location="dist" />
     <property name="build" location="build" />
     <property name="doc" location="${dist}/doc"/>
+    <property name="doc-server" location="${doc}/server" />
+    <property name="doc-library" location="${doc}/library" />
+    <property name="doc-shim" location="${doc}/shim" />
     <property name="lib" location="lib" />
     <property name="src" location="src" />
     <property name="test" location="test"/>
@@ -22,6 +28,9 @@
         <include name="commons-logging-1.1.1.jar" />
         <include name="Concordia-0.4.jar" />
         <include name="hamcrest-core-1.3.jar" />
+        <include name="httpclient-4.3.jar" />
+        <include name="httpcore-4.3.jar" />
+        <include name="httpmime-4.3.jar" />
         <include name="jackson-annotations-2.1.1.jar" />
         <include name="jackson-core-2.1.1.jar" />
         <include name="jackson-databind-2.1.1.jar" />
@@ -74,6 +83,9 @@
         <include name="commons-io-2.4.jar" />
         <include name="commons-logging-1.1.1.jar" />
         <include name="Concordia-0.4.jar" />
+        <include name="httpclient-4.3.jar" />
+        <include name="httpcore-4.3.jar" />
+        <include name="httpmime-4.3.jar" />
         <include name="jackson-annotations-2.1.1.jar" />
         <include name="jackson-core-2.1.1.jar" />
         <include name="jackson-databind-2.1.1.jar" />
@@ -116,8 +128,8 @@
     
     <!-- Target to build the JavaDoc. -->
     <target name="javadoc" description="Creates the documentation.">
-        <mkdir dir="${doc}"/>
-        <javadoc destdir="${doc}" additionalparam="-quiet">
+        <mkdir dir="${doc-server}"/>
+        <javadoc destdir="${doc-server}" additionalparam="-quiet">
             <fileset dir="${src}">
                 <include name="**/*.java"/>
             </fileset>
@@ -180,5 +192,185 @@
                 <exclude name="WEB-INF/**" />
             </zipfileset>
         </war>
-    </target>  
+    </target>
+    
+    <!-- Creates a the JavaDoc for the library. -->
+    <target
+        name="library-javadoc"
+        description="Compiles the JavaDocs for the library.">
+        
+        <!-- Create the documents folder in the build directory. -->
+        <mkdir dir="${doc-library}"/>
+        
+        <!-- Run the JavaDoc command. -->
+        <javadoc destdir="${doc-library}" additionalparam="-quiet">
+            <fileset dir="${src}">
+                <include name="org/openmhealth/reference/concordia/**/*.java" />
+                <include name="org/openmhealth/reference/data/**/*.java" />
+                <include name="org/openmhealth/reference/domain/**/*.java" />
+                <include name="org/openmhealth/reference/exception/**/*.java" />
+                <include name="org/openmhealth/reference/util/**/*.java" />
+            </fileset>
+            <classpath refid="classpath.compile"/>
+        </javadoc>
+
+        <!-- Create the JavaDoc JAR. -->
+        <jar
+            destfile="${dist}/omh-library-${version}-javadoc.jar"
+            basedir="${doc-library}" />
+    </target>
+    
+    <!-- Target to build the library sources JAR. -->
+    <target name="library-sources" description="Creates the library sources JAR.">
+        <!-- Create the dist directory. -->
+        <mkdir dir="${dist}"/>
+
+        <!-- Create the source JAR. -->
+        <jar
+            destfile="${dist}/omh-library-${version}-sources.jar"
+            basedir="${src}">
+
+            <include name="org/openmhealth/reference/concordia/**/*.java" />
+            <include name="org/openmhealth/reference/data/**/*.java" />
+            <include name="org/openmhealth/reference/domain/**/*.java" />
+            <include name="org/openmhealth/reference/exception/**/*.java" />
+            <include name="org/openmhealth/reference/util/**/*.java" />
+        </jar>
+    </target>
+
+    <!-- Compiles the Java files into their class objects for the shim. -->
+    <target
+        name="library-javac"
+        description="Compiles Java files for the library.">
+
+        <!-- Creates the source folder if it doesn't exist. -->
+        <mkdir dir="${build}/classes"/>
+
+        <!-- Compile only the library components. -->
+        <javac 
+            destdir="${build}/classes"
+            source="1.7"
+            target="1.7"
+            debug="true"
+            optimize="true"
+            failonerror="true" 
+            encoding="UTF-8"
+            includeantruntime="false">
+            
+            <src path="${src}"/>
+            <include name="org/openmhealth/reference/concordia/**/*.java" />
+            <include name="org/openmhealth/reference/data/**/*.java" />
+            <include name="org/openmhealth/reference/domain/**/*.java" />
+            <include name="org/openmhealth/reference/exception/**/*.java" />
+            <include name="org/openmhealth/reference/util/**/*.java" />
+            <classpath refid="classpath.compile"/>
+        </javac>
+    </target>
+
+    <!-- Builds the library and associated JARs. -->
+    <target
+        name="library"
+        depends="library-javadoc,library-sources,library-javac"
+        description="Builds the library files, including the source and JavaDoc ones.">
+
+        <!-- Create the directory for the results if they don't exist. -->
+        <mkdir dir="${dist}" />
+
+        <!-- Create the library JAR. -->
+        <jar
+            destfile="${dist}/omh-library-${version}.jar"
+            basedir="${build}/classes">
+
+            <include name="org/openmhealth/reference/concordia/**/*.class" />
+            <include name="org/openmhealth/reference/data/**/*.class" />
+            <include name="org/openmhealth/reference/domain/**/*.class" />
+            <include name="org/openmhealth/reference/exception/**/*.class" />
+            <include name="org/openmhealth/reference/util/**/*.class" />
+        </jar>
+    </target>
+    
+    <!-- Creates a the JavaDoc for the shim. -->
+    <target
+        name="shim-javadoc"
+        description="Compiles the JavaDocs for the shim.">
+        
+        <!-- Create the documents folder in the build directory. -->
+        <mkdir dir="${doc-shim}"/>
+        
+        <!-- Run the JavaDoc command. -->
+        <javadoc destdir="${doc-shim}" additionalparam="-quiet">
+            <fileset dir="${src}">
+                <include name="org/openmhealth/shim/**/*.java" />
+            </fileset>
+            <classpath refid="classpath.compile"/>
+        </javadoc>
+
+        <!-- Create the JavaDoc JAR. -->
+        <jar
+            destfile="${dist}/omh-shim-${version}-javadoc.jar"
+            basedir="${doc-shim}" />
+    </target>
+    
+    <!-- Target to build the shim sources JAR. -->
+    <target name="shim-sources" description="Creates the shim sources JAR.">
+        <!-- Create the dist directory. -->
+        <mkdir dir="${dist}"/>
+
+        <!-- Create the source JAR. -->
+        <jar
+            destfile="${dist}/omh-shim-${version}-sources.jar"
+            basedir="${src}">
+
+            <include name="org/openmhealth/shim/**/*.java" />
+        </jar>
+    </target>
+
+    <!-- Compiles the Java files into their class objects for the shim. -->
+    <target
+        name="shim-javac"
+        description="Compiles Java files for the shim.">
+
+        <!-- Creates the source folder if it doesn't exist. -->
+        <mkdir dir="${build}/classes"/>
+
+        <!-- Compile only the shim components. -->
+        <javac 
+            destdir="${build}/classes"
+            source="1.7"
+            target="1.7"
+            debug="true"
+            optimize="true"
+            failonerror="true" 
+            encoding="UTF-8"
+            includeantruntime="false">
+            
+            <src path="${src}"/>
+            <include name="org/openmhealth/shim/**/*.java" />
+            <classpath refid="classpath.compile"/>
+        </javac>
+    </target>
+
+    <!-- Builds the shim and associated JARs. -->
+    <target
+        name="shim"
+        depends="shim-javadoc,shim-sources,shim-javac"
+        description="Builds the shim files, including the source and JavaDoc ones.">
+
+        <!-- Create the directory for the results if they don't exist. -->
+        <mkdir dir="${dist}" />
+
+        <!-- Create the shim JAR. -->
+        <jar
+            destfile="${dist}/omh-shim-${version}.jar"
+            basedir="${build}/classes">
+            
+            <include name="org/openmhealth/shim/**/*.class" />
+        </jar>
+    </target>
+
+    <!-- A "catch-all" target for all other targets." -->
+    <target
+        name="all"
+        depends="clean,test,dist,library,shim"
+        description="Creates all target elements." />
 </project>
