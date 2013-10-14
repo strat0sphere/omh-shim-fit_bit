@@ -181,21 +181,41 @@ public class DataReadRequest extends ListRequest<Data> {
 							"information.");
 			}
 		}
-		// Otherwise, validate that the requesting user has provided sufficient
-		// permissions to read data about the user they are asking.
-		else if(
-			(
-				(authenticationUsername == null)
-				&&
-				(authorizationUsername == null)
-			)
-			||
-			(
-				username.equals(authenticationUsername)
-				&&
-				username.equals(authorizationUsername)
-			)) {
-			
+		// If the authentication token was given and it refers to the user in
+		// question, then we are good.
+		else if(username.equals(authenticationUsername)) {
+			// We are good.
+		}
+		// If the authorization token was given and it refers to the user in
+		// question, ensure that the scope for this token allows the user to
+		// read the 
+		else if(username.equals(authorizationUsername)) {
+			// Ensure that the authorization token has not yet expired.
+			if(authorizationToken.getExpirationTime() > System.currentTimeMillis()) {
+				throw
+					new InvalidAuthorizationException(
+						"The token has expired.");
+			}
+			// Ensure that the authorization token grants access to the 
+			// requested schema.
+			else if(
+				! authorizationToken
+					.getAuthorizationCode()
+					.getScopes()
+					.contains(schemaId)) {
+				
+				throw
+					new InvalidAuthorizationException(
+						"The given authorization token does not grant the " +
+							"bearer access to the given schema ID.");
+			}
+			// TODO: Ensure that the code/token hasn't been invalidated.
+			// TODO: Ensure that the token hasn't been refreshed, which
+			// implicitly invalidates it.
+		}
+		// Otherwise, the given credentials were not sufficient for authorizing
+		// the requester.
+		else {
 			throw
 				new InvalidAuthorizationException(
 					"Insufficient credentials were provided to read the " +
@@ -266,7 +286,7 @@ public class DataReadRequest extends ListRequest<Data> {
 				DataSet
 					.getInstance()
 					.getData(
-						owner, 
+						username, 
 						schemaId, 
 						version, 
 						columnList, 

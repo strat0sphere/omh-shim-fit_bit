@@ -97,15 +97,6 @@ public class Version1 {
 	 * The root path for queries to this version of the API.
 	 */
 	public static final String PATH = "/v1";
-
-	/**
-	 * The path to the user registration end-point.
-	 */
-	public static final String PATH_REGISTRATION = "/users/registration";
-	/**
-	 * The path to the user activation end-point.
-	 */
-	public static final String PATH_ACTIVATION = "/users/activation";
 	
 	/**
 	 * The username parameter for the authenticate requests.

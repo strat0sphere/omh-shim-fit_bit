@@ -279,7 +279,7 @@ public class AuthorizeDomainRequest extends Request<URL> {
 			throw new OmhException("The token URL was not a valid URL.", e);
 		}
 		
-		// Add out secret as a header.
+		// Add our secret as a header.
 		request.addHeader("Authorization", "Basic " + shim.getClientSecret());
 		
 		// Add the parameters.
@@ -336,7 +336,10 @@ public class AuthorizeDomainRequest extends Request<URL> {
         		information.getUsername(), 
         		information.getDomain(), 
         		responseObject.accessToken, 
-        		responseObject.refreshToken, 
+        		responseObject.refreshToken,
+        		// We subtract a second to account for our own processing time.
+        		// This decreases (although, not eliminates) the chance of a
+        		// client using a token after it has expired.
         		(responseObject.expiresIn - 1) * 1000);
 		
 		// Store the token.

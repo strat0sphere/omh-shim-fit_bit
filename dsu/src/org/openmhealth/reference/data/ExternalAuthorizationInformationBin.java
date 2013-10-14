@@ -21,7 +21,7 @@ public abstract class ExternalAuthorizationInformationBin {
 		"external_authorization_information_bin";
 	
 	/**
-	 * The instance of this AuthenticationTokenBin to use. 
+	 * The instance of this ExternalAuthorizationInformationBin to use. 
 	 */
 	protected static ExternalAuthorizationInformationBin instance;
 	
