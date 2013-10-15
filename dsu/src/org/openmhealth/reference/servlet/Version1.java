@@ -52,6 +52,7 @@ import org.openmhealth.reference.domain.AuthorizationCodeResponse;
 import org.openmhealth.reference.domain.AuthorizationToken;
 import org.openmhealth.reference.domain.Data;
 import org.openmhealth.reference.domain.ExternalAuthorizationInformation;
+import org.openmhealth.reference.domain.ExternalAuthorizationInformation.RequestToken;
 import org.openmhealth.reference.domain.ExternalAuthorizationToken;
 import org.openmhealth.reference.domain.MultiValueResult;
 import org.openmhealth.reference.domain.ThirdParty;
@@ -1115,7 +1116,10 @@ public class Version1 {
 			handleRequest(
 				request,
 				response,
-				new UserAuthorizedDomainRequest(authToken, domain));
+				new UserAuthorizedDomainRequest(
+					authToken,
+					domain,
+					buildRootUrl(request)));
 	}
 	
 	/**
@@ -1139,8 +1143,12 @@ public class Version1 {
 	public URL authorizeDomain(
 		@RequestParam(
 			value = "code",
-			required = true)
+			required = false)
 			final String code,
+		@RequestParam(
+			value = RequestToken.OAUTH_PREFIX + "token",
+			required = false)
+			final String token,
 		@RequestParam(
 			value = "state",
 			required = true)
@@ -1152,7 +1160,9 @@ public class Version1 {
 			handleRequest(
 				request,
 				response,
-				new AuthorizeDomainRequest(code, state));
+				new AuthorizeDomainRequest(
+					(code == null) ? token : code,
+					state));
 	}
 	
 	/**

@@ -5,6 +5,14 @@ import org.openmhealth.reference.exception.OmhException;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * <p>
+ * A token supplied by an external entity to be used for querying data from
+ * that entity.
+ * </p>
+ *
+ * @author John Jenkins
+ */
 public class ExternalAuthorizationToken implements OmhObject {
 	/**
 	 * The version of this class used for serialization purposes.
