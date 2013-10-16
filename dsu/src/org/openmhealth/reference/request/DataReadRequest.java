@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.joda.time.DateTime;
 import org.openmhealth.reference.data.DataSet;
 import org.openmhealth.reference.data.ExternalAuthorizationTokenBin;
 import org.openmhealth.reference.data.Registry;
@@ -66,6 +67,14 @@ public class DataReadRequest extends ListRequest<Data> {
 	 */
 	private final String owner;
 	/**
+	 * The earliest point from which data should be read.
+	 */
+	private final DateTime startDate;
+	/**
+	 * The latest point from which data should be read.
+	 */
+	private final DateTime endDate;
+	/**
 	 * The list of columns to select from the data.
 	 */
 	private final ColumnList columnList;
@@ -84,6 +93,10 @@ public class DataReadRequest extends ListRequest<Data> {
 	 * 
 	 * @param owner Defines whose data should be read.
 	 * 
+	 * @param startDate The earliest point from which data should be read.
+	 * 
+	 * @param endDate The latest point from which data should be read.
+	 * 
 	 * @param columnList The list of columns in the data to return.
 	 * 
 	 * @param numToSkip The number of data points to skip.
@@ -98,6 +111,8 @@ public class DataReadRequest extends ListRequest<Data> {
 		final String schemaId,
 		final long version,
 		final String owner,
+		final DateTime startDate,
+		final DateTime endDate,
 		final List<String> columnList,
 		final Long numToSkip,
 		final Long numToReturn)
@@ -119,6 +134,8 @@ public class DataReadRequest extends ListRequest<Data> {
 		this.schemaId = schemaId;
 		this.version = version;
 		this.owner = owner;
+		this.startDate = startDate;
+		this.endDate = endDate;
 		this.columnList = new ColumnList(columnList);
 	}
 
@@ -181,20 +198,26 @@ public class DataReadRequest extends ListRequest<Data> {
 							"information.");
 			}
 		}
+		
 		// If the authentication token was given and it refers to the user in
-		// question, then we are good.
-		else if(username.equals(authenticationUsername)) {
-			// We are good.
-		}
-		// If the authorization token was given and it refers to the user in
-		// question, ensure that the scope for this token allows the user to
-		// read the 
-		else if(username.equals(authorizationUsername)) {
-			// Ensure that the authorization token has not yet expired.
-			if(authorizationToken.getExpirationTime() > System.currentTimeMillis()) {
+		// question, ensure that the token is valid.
+		if(username.equals(authenticationUsername)) {
+			// Ensure that the token has not expired.
+			if(authenticationToken.getExpires() < System.currentTimeMillis()) {
 				throw
 					new InvalidAuthorizationException(
-						"The token has expired.");
+						"The authentication token has expired.");
+			}
+		}
+		// If the authorization token was given and it refers to the user in
+		// question, ensure that the token is valid and provides sufficient
+		// privileges.
+		else if(username.equals(authorizationUsername)) {
+			// Ensure that the authorization token has not yet expired.
+			if(authorizationToken.getExpirationTime() < System.currentTimeMillis()) {
+				throw
+					new InvalidAuthorizationException(
+						"The authorization token has expired.");
 			}
 			// Ensure that the authorization token grants access to the 
 			// requested schema.
@@ -209,7 +232,8 @@ public class DataReadRequest extends ListRequest<Data> {
 						"The given authorization token does not grant the " +
 							"bearer access to the given schema ID.");
 			}
-			// TODO: Ensure that the code/token hasn't been invalidated.
+			// TODO: Ensure that the code hasn't been invalidated.
+			// TODO: Ensure that the token hasn't been invalidated.
 			// TODO: Ensure that the token hasn't been refreshed, which
 			// implicitly invalidates it.
 		}
@@ -270,8 +294,8 @@ public class DataReadRequest extends ListRequest<Data> {
 						schemaId,
 						version,
 						token,
-						null,
-						null,
+						startDate,
+						endDate,
 						columnList,
 						getNumToSkip(),
 						getNumToReturn());
@@ -282,6 +306,7 @@ public class DataReadRequest extends ListRequest<Data> {
 		}
 		// Otherwise, handle the request ourselves.
 		else {
+			// FIXME: Add the start and end date parameters.
 			result =
 				DataSet
 					.getInstance()

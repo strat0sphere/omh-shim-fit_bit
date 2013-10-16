@@ -40,6 +40,7 @@ import org.apache.oltu.oauth2.common.message.OAuthResponse;
 import org.apache.oltu.oauth2.common.message.types.GrantType;
 import org.apache.oltu.oauth2.common.message.types.ResponseType;
 import org.apache.oltu.oauth2.common.message.types.TokenType;
+import org.joda.time.DateTime;
 import org.openmhealth.reference.data.AuthorizationCodeBin;
 import org.openmhealth.reference.data.AuthorizationCodeResponseBin;
 import org.openmhealth.reference.data.AuthorizationTokenBin;
@@ -1399,6 +1400,10 @@ public class Version1 {
 	 * @param owner
 	 *        The user that owns the desired data.
 	 * 
+	 * @param startDate The earliest point from which data should be read.
+	 * 
+	 * @param endDate The latest point from which data should be read.
+	 * 
 	 * @param columnList
 	 *        The list of columns to return to the user.
 	 * 
@@ -1429,6 +1434,14 @@ public class Version1 {
 			value = PARAM_OWNER,
 			required = false)
 			final String owner,
+		@RequestParam(
+			value = PARAM_DATE_START,
+			required = false)
+			final DateTime startDate,
+		@RequestParam(
+			value = PARAM_DATE_END,
+			required = false)
+			final DateTime endDate,
 		@RequestParam(
 			value = PARAM_COLUMN_LIST,
 			required = false)
@@ -1465,6 +1478,8 @@ public class Version1 {
 					schemaId,
 					version,
 					owner,
+					startDate,
+					endDate,
 					columnList,
 					numToSkip,
 					numToReturn));

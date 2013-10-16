@@ -224,12 +224,11 @@ public class AuthFilter implements Filter {
 						.getInstance()
 						.getTokenFromAccessToken(authorizationTokenString);
 				
-				// If the token is null, it does not exist or is expired.
+				// If the token is null, it does not exist.
 				if(authorizationToken == null) {
 					throw
 						new InvalidAuthorizationException(
-							"The authorization token is unknown or " +
-								"expired.");
+							"The authorization token is unknown.");
 				}
 				
 				// Add the token to the request as an attribute.
