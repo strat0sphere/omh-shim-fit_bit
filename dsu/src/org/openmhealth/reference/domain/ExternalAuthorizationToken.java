@@ -166,4 +166,16 @@ public class ExternalAuthorizationToken implements OmhObject {
 	public long getExpiration() {
 		return expiration;
 	}
+	
+	/**
+	 * Returns whether or not the expiration token is still valid. There may be
+	 * many reasons why it is invalid, so, if a specific check is desired e.g.
+	 * the token has expired, a specific method, e.g. {@link #getExpiration()}
+	 * should be used instead.
+	 * 
+	 * @return Whether or not this token is valid.
+	 */
+	public boolean isValid() {
+		return (expiration < System.currentTimeMillis());
+	}
 }
