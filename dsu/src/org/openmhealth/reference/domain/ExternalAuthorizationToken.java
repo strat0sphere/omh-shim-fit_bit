@@ -117,4 +117,53 @@ public class ExternalAuthorizationToken implements OmhObject {
 		this.refreshToken = refreshToken;
 		this.expiration = expiration;
 	}
+	
+	/**
+	 * Returns the Open mHealth user-name of the user to whom this token
+	 * belongs.
+	 * 
+	 * @return The Open mHealth user-name of the user to whom this token
+	 *         belongs.
+	 */
+	public String getUsername() {
+		return username;
+	}
+
+	/**
+	 * Returns the domain to which this token is associated.
+	 * 
+	 * @return The domain to which this token is associated.
+	 */
+	public String getDomain() {
+		return domain;
+	}
+
+	/**
+	 * Returns the token to use to request data.
+	 * 
+	 * @return The token to use to request data.
+	 */
+	public String getAccessToken() {
+		return accessToken;
+	}
+
+	/**
+	 * Returns the token to exchange for a new access and refresh token.
+	 * 
+	 * @return The token to exchange for a new access and refresh token.
+	 */
+	public String getRefreshToken() {
+		return refreshToken;
+	}
+
+	/**
+	 * Returns the date and time that this token expires, represented as the
+	 * number of milliseconds since the Unix epoch.
+	 * 
+	 * @return The number of milliseconds since the Unix epoch at which time
+	 *         this token expires.
+	 */
+	public long getExpiration() {
+		return expiration;
+	}
 }

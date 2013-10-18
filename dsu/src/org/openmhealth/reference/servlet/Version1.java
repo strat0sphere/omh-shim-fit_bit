@@ -1400,9 +1400,11 @@ public class Version1 {
 	 * @param owner
 	 *        The user that owns the desired data.
 	 * 
-	 * @param startDate The earliest point from which data should be read.
+	 * @param startDate
+	 *        The earliest point from which data should be read.
 	 * 
-	 * @param endDate The latest point from which data should be read.
+	 * @param endDate
+	 *        The latest point from which data should be read.
 	 * 
 	 * @param columnList
 	 *        The list of columns to return to the user.
@@ -1412,7 +1414,7 @@ public class Version1 {
 	 * 
 	 * @param numToReturn
 	 *        The number of data points to return to facilitate paging.
-	 *        
+	 * 
 	 * @param request
 	 *        The HTTP request object.
 	 * 
