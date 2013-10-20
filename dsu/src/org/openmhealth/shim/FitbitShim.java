@@ -23,7 +23,45 @@ import org.openmhealth.shim.exception.ShimSchemaException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.fitbit.api.FitbitAPIException;
+import com.fitbit.api.client.FitbitAPIEntityCache;
+import com.fitbit.api.client.FitbitApiClientAgent;
+import com.fitbit.api.client.FitbitApiCredentialsCache;
+import com.fitbit.api.client.FitbitApiCredentialsCacheMapImpl;
+import com.fitbit.api.client.FitbitApiEntityCacheMapImpl;
+import com.fitbit.api.client.FitbitApiSubscriptionStorage;
+import com.fitbit.api.client.FitbitApiSubscriptionStorageInMemoryImpl;
+import com.fitbit.api.client.LocalUserDetail;
+import com.fitbit.api.client.service.FitbitAPIClientService;
+import com.fitbit.api.common.model.activities.Activities;
+import com.fitbit.api.model.APIResourceCredentials;
+import com.fitbit.api.model.FitbitUser;
+
 public class FitbitShim implements Shim {
+    private FitbitAPIEntityCache entityCache =
+        new FitbitApiEntityCacheMapImpl();
+
+    private FitbitApiCredentialsCache credentialsCache = 
+        new FitbitApiCredentialsCacheMapImpl();
+
+    private FitbitApiSubscriptionStorage subscriptionStore = 
+        new FitbitApiSubscriptionStorageInMemoryImpl();
+
+    private FitbitAPIClientService<FitbitApiClientAgent> apiClientService;
+
+    public FitbitShim() {
+         apiClientService = 
+             new FitbitAPIClientService<FitbitApiClientAgent>(
+                 new FitbitApiClientAgent(
+                     "api.fitbit.com", "http://www.fitbit.com", 
+                     credentialsCache),
+                 getClientId(),
+                 getClientSecret(),
+                 credentialsCache,
+                 entityCache,
+                 subscriptionStore);
+    }
+
     public String getDomain() {
         return "fitbit";
     }
@@ -54,7 +92,7 @@ public class FitbitShim implements Shim {
     }
 
 	public List<String> getSchemaIds() {
-        return Arrays.asList("omh:fitbit:steps");
+        return Arrays.asList("omh:fitbit:activity");
     }
 
 	public List<Long> getSchemaVersions(
@@ -88,7 +126,7 @@ public class FitbitShim implements Shim {
         }
                 
         return new Schema(
-            "omh:fitbit:steps", 1, schemaNode,
+            "omh:fitbit:activity", 1, schemaNode,
             ValidationController.BASIC_CONTROLLER);
     }
 
@@ -102,9 +140,30 @@ public class FitbitShim implements Shim {
 		final Long numToSkip,
 		final Long numToReturn)
 		throws ShimDataException {
+        LocalUserDetail localUserDetail =
+            new LocalUserDetail(token.getUsername());
+
+        // Store the user's access token in the cache.
+        APIResourceCredentials credentials =
+            new APIResourceCredentials(token.getUsername(), null, null);
+        credentials.setAccessToken(token.getAccessToken());
+        credentials.setAccessTokenSecret(token.getAccessTokenSecret());
+        credentialsCache.saveResourceCredentials(localUserDetail, credentials);
+
+        Activities activities = null;
+        try {
+            activities = apiClientService.getClient().getActivities(
+                localUserDetail, FitbitUser.CURRENT_AUTHORIZED_USER, 
+                startDate.toLocalDate());
+        }
+        catch(FitbitAPIException e) {
+            throw new ShimDataException("Fitbit API error", e);
+        }
+
+        // Fetch the schema.
         Schema schema = null;
         try {
-            schema = getSchema("foo", 1L);
+            schema = getSchema(schemaId, 1L);
         }
         catch(ShimSchemaException e) {
         }
@@ -112,7 +171,10 @@ public class FitbitShim implements Shim {
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode dataPoint = null;
         try {
-            dataPoint = objectMapper.readTree("{\"steps\": 3}");
+            dataPoint = objectMapper.readTree(
+                "{\"steps\": "
+                + activities.getSummary().getSteps()
+                + "}");
         }
         catch(IOException e) {
             throw new ShimDataException("json error", e);
@@ -120,12 +182,8 @@ public class FitbitShim implements Shim {
 
         return Arrays.asList(
             new Data(
-                "Test.User", schema, 
-                new MetaData(null, DateTime.now()),
-                dataPoint),
-            new Data(
-                "Test.User", schema, 
-                new MetaData("metafoo", DateTime.now()),
+                token.getUsername(), schema, 
+                new MetaData(null, startDate),
                 dataPoint));
     }
 
