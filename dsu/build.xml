@@ -15,6 +15,7 @@
     <property name="doc-library" location="${doc}/library" />
     <property name="doc-shim" location="${doc}/shim" />
     <property name="lib" location="lib" />
+    <property name="schema" location="schema" />
     <property name="src" location="src" />
     <property name="test" location="test"/>
     <property name="web" location="web" />
@@ -186,6 +187,7 @@
             destfile="${dist}/omh.war">
         	
             <classes dir="${build}/classes" />
+            <classes dir="${schema}" prefix="WEB-INF/classes/schema" />
             <lib refid="dependencies.run" />
             <webinf dir="${web}/WEB-INF" />
             <metainf dir="${web}/META-INF" />
