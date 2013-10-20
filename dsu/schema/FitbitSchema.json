@@ -1,30 +1,9 @@
 {
-    "type": "array",
-    "constType": {
-        "type": "object",
-        "fields": [
-            {
-                "name": "value",
-                "type": "number"
-            },
-            {
-                "name": "date",
-                "type": "object",
-                "fields": [
-                    {
-                        "name": "day",
-                        "type": "number"
-                    },
-                    {
-                        "name": "month",
-                        "type": "number"
-                    },
-                    {
-                        "name": "year",
-                        "type": "number"
-                    }
-                ]
-            }
-        ]
-    }
+    "type": "object",
+    "fields":[
+        {
+            "type": "number",
+            "name": "steps"
+        }
+    ]
 }
