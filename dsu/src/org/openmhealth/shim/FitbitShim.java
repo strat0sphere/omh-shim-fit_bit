@@ -15,6 +15,7 @@ import org.joda.time.DateTime;
 import org.openmhealth.reference.domain.ColumnList;
 import org.openmhealth.reference.domain.Data;
 import org.openmhealth.reference.domain.ExternalAuthorizationToken;
+import org.openmhealth.reference.domain.MetaData;
 import org.openmhealth.reference.domain.Schema;
 import org.openmhealth.shim.exception.ShimDataException;
 import org.openmhealth.shim.exception.ShimSchemaException;
@@ -101,7 +102,31 @@ public class FitbitShim implements Shim {
 		final Long numToSkip,
 		final Long numToReturn)
 		throws ShimDataException {
-        return null;
+        Schema schema = null;
+        try {
+            schema = getSchema("foo", 1L);
+        }
+        catch(ShimSchemaException e) {
+        }
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode dataPoint = null;
+        try {
+            dataPoint = objectMapper.readTree("{\"steps\": 3}");
+        }
+        catch(IOException e) {
+            throw new ShimDataException("json error", e);
+        }
+
+        return Arrays.asList(
+            new Data(
+                "Test.User", schema, 
+                new MetaData(null, DateTime.now()),
+                dataPoint),
+            new Data(
+                "Test.User", schema, 
+                new MetaData("metafoo", DateTime.now()),
+                dataPoint));
     }
 
     private static URL buildURL(String urlStr) {
