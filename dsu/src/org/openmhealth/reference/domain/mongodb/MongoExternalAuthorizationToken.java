@@ -65,12 +65,16 @@ public class MongoExternalAuthorizationToken
 		@JsonProperty(JSON_KEY_USERNAME) final String username,
 		@JsonProperty(JSON_KEY_DOMAIN) final String domain,
 		@JsonProperty(JSON_KEY_ACCESS_TOKEN) final String accessToken,
+		@JsonProperty(JSON_KEY_ACCESS_TOKEN_SECRET) 
+        final String accessTokenSecret,
 		@JsonProperty(JSON_KEY_REFRESH_TOKEN) final String refreshToken,
 		@JsonProperty(JSON_KEY_EXPIRATION_TIME) final long expiration,
 		@JsonProperty(JSON_KEY_EXTRAS) final Map<String, Object> extras)
 		throws OmhException {
 
-		super(username, domain, accessToken, refreshToken, expiration, extras);
+		super(
+            username, domain, accessToken, accessTokenSecret, 
+            refreshToken, expiration, extras);
 		
 		// Store the MongoDB ID.
 		if(dbId == null) {

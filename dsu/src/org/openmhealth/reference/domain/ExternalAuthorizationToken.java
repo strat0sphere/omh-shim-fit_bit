@@ -35,6 +35,11 @@ public class ExternalAuthorizationToken implements OmhObject {
 	 */
 	public static final String JSON_KEY_ACCESS_TOKEN = "access_token";
 	/**
+	 * The JSON key for the access token secret.
+	 */
+	public static final String JSON_KEY_ACCESS_TOKEN_SECRET = 
+        "access_token_secret";
+	/**
 	 * The JSON key for the refresh token.
 	 */
 	public static final String JSON_KEY_REFRESH_TOKEN = "refresh_token";
@@ -62,6 +67,11 @@ public class ExternalAuthorizationToken implements OmhObject {
 	 */
 	@JsonProperty(JSON_KEY_ACCESS_TOKEN)
 	private final String accessToken;
+	/**
+	 * The access token secret to use for making requests.
+	 */
+	@JsonProperty(JSON_KEY_ACCESS_TOKEN_SECRET)
+	private final String accessTokenSecret;
 	/**
 	 * The refresh token to use to get new access and refresh tokens when these
 	 * expire.
@@ -114,6 +124,8 @@ public class ExternalAuthorizationToken implements OmhObject {
 		@JsonProperty(JSON_KEY_USERNAME) final String username,
 		@JsonProperty(JSON_KEY_DOMAIN) final String domain,
 		@JsonProperty(JSON_KEY_ACCESS_TOKEN) final String accessToken,
+		@JsonProperty(JSON_KEY_ACCESS_TOKEN_SECRET) 
+        final String accessTokenSecret,
 		@JsonProperty(JSON_KEY_REFRESH_TOKEN) final String refreshToken,
 		@JsonProperty(JSON_KEY_EXPIRATION_TIME) final long expiration,
 		@JsonProperty(JSON_KEY_EXTRAS) final Map<String, Object> extras)
@@ -128,10 +140,17 @@ public class ExternalAuthorizationToken implements OmhObject {
 		if(accessToken == null) {
 			throw new OmhException("The access token is null.");
 		}
+		if(accessTokenSecret == null) {
+			throw new OmhException("The access token secret is null.");
+		}
+		if(refreshToken == null) {
+			throw new OmhException("The refresh token is null.");
+		}
 		
 		this.username = username;
 		this.domain = domain;
 		this.accessToken = accessToken;
+		this.accessTokenSecret = accessTokenSecret;
 		this.refreshToken = refreshToken;
 		this.expiration = expiration;
 		this.extras =
