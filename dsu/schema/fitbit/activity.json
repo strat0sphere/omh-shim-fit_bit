@@ -4,6 +4,19 @@
         {
             "type": "number",
             "name": "steps"
+        },
+        {
+            "type": "number",
+            "name": "calories_out"
+        },
+        {
+            "type": "number",
+            "name": "distance"
+        },
+        {
+            "type": "number",
+            "name": "floors",
+            "optional": true
         }
     ]
 }

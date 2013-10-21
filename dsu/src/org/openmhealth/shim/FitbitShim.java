@@ -38,6 +38,8 @@ import com.fitbit.api.client.FitbitApiSubscriptionStorageInMemoryImpl;
 import com.fitbit.api.client.LocalUserDetail;
 import com.fitbit.api.client.service.FitbitAPIClientService;
 import com.fitbit.api.common.model.activities.Activities;
+import com.fitbit.api.common.model.activities.ActivitiesSummary;
+import com.fitbit.api.common.model.activities.ActivityDistance;
 import com.fitbit.api.model.APIResourceCredentials;
 import com.fitbit.api.model.FitbitUser;
 
@@ -259,8 +261,26 @@ public class FitbitShim implements Shim {
         }
 
         // Build the return data object.
+        ActivitiesSummary summary = activities.getSummary();
+
         Map<String, Object> data = new HashMap<String, Object>();
-        data.put("steps", activities.getSummary().getSteps());
+        data.put("steps", summary.getSteps());
+
+        data.put("calories_out", summary.getCaloriesOut());
+
+        double distance = 0;
+
+        for(ActivityDistance d : summary.getDistances()) {
+            if (d.getActivity().equals("total")) {
+                distance = d.getDistance();
+                break;
+            }
+        }
+        data.put("distance", distance);
+
+        if (summary.getFloors() != null) {
+            data.put("floors", summary.getFloors());
+        }
 
         return data;
     }
