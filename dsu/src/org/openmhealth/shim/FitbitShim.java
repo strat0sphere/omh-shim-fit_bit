@@ -6,7 +6,11 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import name.jenkins.paul.john.concordia.schema.ObjectSchema;
 import name.jenkins.paul.john.concordia.validator.ValidationController;
@@ -38,6 +42,11 @@ import com.fitbit.api.model.APIResourceCredentials;
 import com.fitbit.api.model.FitbitUser;
 
 public class FitbitShim implements Shim {
+    /**
+     * The prefix for all schemas used in this shim.
+     */
+    private static final String SCHEMA_PREFIX = "omh:fitbit:";
+
     private FitbitAPIEntityCache entityCache =
         new FitbitApiEntityCacheMapImpl();
 
@@ -48,6 +57,33 @@ public class FitbitShim implements Shim {
         new FitbitApiSubscriptionStorageInMemoryImpl();
 
     private FitbitAPIClientService<FitbitApiClientAgent> apiClientService;
+
+    /**
+     * Interface for the data fetchers used in the dataFetcherMap below. One
+     * DataFetcher will be defined for each supported domain.
+     */
+    private interface DataFetcher {
+        public Map<String, Object> dataForDay(
+            FitbitAPIClientService<FitbitApiClientAgent> client,
+            LocalUserDetail localUserDetail, DateTime date);
+    }
+
+    /**
+     * Maps schemaID to DataFetcher for each supported domain.
+     */
+    private static Map<String, DataFetcher> dataFetcherMap = 
+        new HashMap<String, DataFetcher>();
+    static {
+        dataFetcherMap.put(
+            "activity", 
+            new DataFetcher() {
+                public Map<String, Object> dataForDay(
+                    FitbitAPIClientService<FitbitApiClientAgent> client,
+                    LocalUserDetail localUserDetail, DateTime date) {
+                    return activityForDay(client, localUserDetail, date);
+                }
+            });
+    }
 
     public FitbitShim() {
          apiClientService = 
@@ -74,7 +110,6 @@ public class FitbitShim implements Shim {
         return buildURL("http://api.fitbit.com/oauth/request_token");
     }
 
-
 	public URL getAuthorizeUrl() {
         return buildURL("http://www.fitbit.com/oauth/authorize");
     }
@@ -92,16 +127,15 @@ public class FitbitShim implements Shim {
     }
 
 	public List<String> getSchemaIds() {
-        return Arrays.asList("omh:fitbit:activity");
+		return Collections.unmodifiableList(
+            new ArrayList<String>(dataFetcherMap.keySet()));
     }
 
 	public List<Long> getSchemaVersions(
 		final String id)
 		throws ShimSchemaException {
-        if (id == null) {
-            throw new ShimSchemaException("Given ID is null.");
-        }
-
+        // This shim doesn't (yet) have more than one version of a schema for
+        // anything, so we just hardcode the return here.
         List<Long> versionList = new ArrayList<Long>();
         versionList.add(1L);
         return versionList;
@@ -111,12 +145,26 @@ public class FitbitShim implements Shim {
 		final String id,
 		final Long version)
 		throws ShimSchemaException {
+        if (id == null) {
+            throw new ShimSchemaException("The given schema ID is null.");
+        }
+        if (version == null) {
+            throw new ShimSchemaException("The given schema version is null.");
+        }
+
+        // We only have a version 1 for now, so return null early for anything
+        // but 1.
+        if (!version.equals(1L)) {
+            return null;
+        }
+
+        String schemaResourcePath =
+            "/schema/" + getDomain() + "/" + dataTypeFromSchemaId(id) + ".json";
+
         // Load and parse the Fitbit schema from the schema file.
         ObjectMapper objectMapper = new ObjectMapper();
         InputStream schemaStream =
-            getClass().getClassLoader().getResourceAsStream(
-                "/schema/FitbitSchema.json");
-
+            getClass().getClassLoader().getResourceAsStream(schemaResourcePath);
         JsonNode schemaNode = null;
         try {
             schemaNode = objectMapper.readTree(schemaStream);
@@ -126,8 +174,7 @@ public class FitbitShim implements Shim {
         }
                 
         return new Schema(
-            "omh:fitbit:activity", 1, schemaNode,
-            ValidationController.BASIC_CONTROLLER);
+            id, 1, schemaNode, ValidationController.BASIC_CONTROLLER);
     }
 
 	public List<Data> getData(
@@ -140,6 +187,12 @@ public class FitbitShim implements Shim {
 		final Long numToSkip,
 		final Long numToReturn)
 		throws ShimDataException {
+        // We only have a version 1 for now, so return null early for anything
+        // but 1.
+        if (!version.equals(1L)) {
+            return null;
+        }
+
         LocalUserDetail localUserDetail =
             new LocalUserDetail(token.getUsername());
 
@@ -150,16 +203,6 @@ public class FitbitShim implements Shim {
         credentials.setAccessTokenSecret(token.getAccessTokenSecret());
         credentialsCache.saveResourceCredentials(localUserDetail, credentials);
 
-        Activities activities = null;
-        try {
-            activities = apiClientService.getClient().getActivities(
-                localUserDetail, FitbitUser.CURRENT_AUTHORIZED_USER, 
-                startDate.toLocalDate());
-        }
-        catch(FitbitAPIException e) {
-            throw new ShimDataException("Fitbit API error", e);
-        }
-
         // Fetch the schema.
         Schema schema = null;
         try {
@@ -168,16 +211,29 @@ public class FitbitShim implements Shim {
         catch(ShimSchemaException e) {
         }
 
+        // Extract the data type and find the associated DataFetcher.
+        String dataType = dataTypeFromSchemaId(schemaId);
+        try {
+            dataType = dataTypeFromSchemaId(schemaId);
+        }
+        catch(ShimSchemaException e) {
+            throw new ShimDataException("Invalid schema id: " + schemaId, e);
+        }
+        DataFetcher dataFetcher = dataFetcherMap.get(dataType);
+        if (dataFetcher == null) {
+            throw new ShimDataException("Unknown schema id: " + schemaId);
+        }
+
+        // Fetch the data.
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode dataPoint = null;
         try {
-            dataPoint = objectMapper.readTree(
-                "{\"steps\": "
-                + activities.getSummary().getSteps()
-                + "}");
+            dataPoint = objectMapper.valueToTree(
+                dataFetcher.dataForDay(
+                    apiClientService, localUserDetail, startDate));
         }
-        catch(IOException e) {
-            throw new ShimDataException("json error", e);
+        catch(Exception e) {
+            throw new ShimDataException("JSON encoding error", e);
         }
 
         return Arrays.asList(
@@ -187,6 +243,50 @@ public class FitbitShim implements Shim {
                 dataPoint));
     }
 
+    private static Map<String, Object>
+    activityForDay(
+        FitbitAPIClientService<FitbitApiClientAgent> client,
+        LocalUserDetail localUserDetail, DateTime date) {
+        // Fetch the data.
+        Activities activities = null;
+        try {
+            activities = client.getClient().getActivities(
+                localUserDetail, FitbitUser.CURRENT_AUTHORIZED_USER, 
+                date.toLocalDate());
+        }
+        catch(FitbitAPIException e) {
+            throw new ShimDataException("Fitbit API error", e);
+        }
+
+        // Build the return data object.
+        Map<String, Object> data = new HashMap<String, Object>();
+        data.put("steps", activities.getSummary().getSteps());
+
+        return data;
+    }
+
+    /**
+     * Given a schema ID, returns the data type. For example, given
+     * 'omh:fitbit:activity', will return 'activity'.
+     */
+    private static String dataTypeFromSchemaId(String id)
+        throws ShimSchemaException {
+        if (id == null) {
+            throw new ShimSchemaException("id is null");
+        }
+
+        String[] parts = id.split(":");
+
+        if (parts.length != 3) {
+            throw new ShimSchemaException("Invalid schema id: " + id);
+        }
+
+        return parts[2];
+    }
+
+    /**
+     * Creates a URL from a String.
+     */
     private static URL buildURL(String urlStr) {
         URL url = null;
 
