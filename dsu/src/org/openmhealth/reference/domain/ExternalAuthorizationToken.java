@@ -140,11 +140,9 @@ public class ExternalAuthorizationToken implements OmhObject {
 		if(accessToken == null) {
 			throw new OmhException("The access token is null.");
 		}
-		if(accessTokenSecret == null) {
-			throw new OmhException("The access token secret is null.");
-		}
-		if(refreshToken == null) {
-			throw new OmhException("The refresh token is null.");
+		if(accessTokenSecret == null && refreshToken == null) {
+			throw new OmhException(
+                "The access token secret and refresh token are both null.");
 		}
 		
 		this.username = username;
