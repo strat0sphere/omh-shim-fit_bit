@@ -37,9 +37,9 @@ import com.fitbit.api.client.FitbitApiSubscriptionStorage;
 import com.fitbit.api.client.FitbitApiSubscriptionStorageInMemoryImpl;
 import com.fitbit.api.client.LocalUserDetail;
 import com.fitbit.api.client.service.FitbitAPIClientService;
-import com.fitbit.api.common.model.activities.Activities;
 import com.fitbit.api.common.model.activities.ActivitiesSummary;
 import com.fitbit.api.common.model.activities.ActivityDistance;
+import com.fitbit.api.common.model.sleep.SleepSummary;
 import com.fitbit.api.model.APIResourceCredentials;
 import com.fitbit.api.model.FitbitUser;
 
@@ -83,6 +83,16 @@ public class FitbitShim implements Shim {
                     FitbitAPIClientService<FitbitApiClientAgent> client,
                     LocalUserDetail localUserDetail, DateTime date) {
                     return activityForDay(client, localUserDetail, date);
+                }
+            });
+
+        dataFetcherMap.put(
+            "sleep", 
+            new DataFetcher() {
+                public Map<String, Object> dataForDay(
+                    FitbitAPIClientService<FitbitApiClientAgent> client,
+                    LocalUserDetail localUserDetail, DateTime date) {
+                    return sleepForDay(client, localUserDetail, date);
                 }
             });
     }
@@ -245,31 +255,28 @@ public class FitbitShim implements Shim {
                 dataPoint));
     }
 
-    private static Map<String, Object>
-    activityForDay(
+    private static Map<String, Object> activityForDay(
         FitbitAPIClientService<FitbitApiClientAgent> client,
         LocalUserDetail localUserDetail, DateTime date) {
         // Fetch the data.
-        Activities activities = null;
+        ActivitiesSummary summary = null;
         try {
-            activities = client.getClient().getActivities(
+            summary = client.getClient().getActivities(
                 localUserDetail, FitbitUser.CURRENT_AUTHORIZED_USER, 
-                date.toLocalDate());
+                date.toLocalDate()).getSummary();
         }
         catch(FitbitAPIException e) {
             throw new ShimDataException("Fitbit API error", e);
         }
 
         // Build the return data object.
-        ActivitiesSummary summary = activities.getSummary();
-
         Map<String, Object> data = new HashMap<String, Object>();
+
         data.put("steps", summary.getSteps());
 
         data.put("calories_out", summary.getCaloriesOut());
 
         double distance = 0;
-
         for(ActivityDistance d : summary.getDistances()) {
             if (d.getActivity().equals("total")) {
                 distance = d.getDistance();
@@ -281,6 +288,29 @@ public class FitbitShim implements Shim {
         if (summary.getFloors() != null) {
             data.put("floors", summary.getFloors());
         }
+
+        return data;
+    }
+
+    private static Map<String, Object> sleepForDay(
+        FitbitAPIClientService<FitbitApiClientAgent> client,
+        LocalUserDetail localUserDetail, DateTime date) {
+        // Fetch the data.
+        SleepSummary summary = null;
+        try {
+            summary = client.getClient().getSleep(
+                localUserDetail, FitbitUser.CURRENT_AUTHORIZED_USER, 
+                date.toLocalDate()).getSummary();
+        }
+        catch(FitbitAPIException e) {
+            throw new ShimDataException("Fitbit API error", e);
+        }
+
+        // Build the return data object.
+        Map<String, Object> data = new HashMap<String, Object>();
+
+        data.put("minutes_asleep", summary.getTotalMinutesAsleep());
+        data.put("time_in_bed", summary.getTotalTimeInBed());
 
         return data;
     }

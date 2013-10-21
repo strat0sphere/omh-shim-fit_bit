@@ -1,0 +1,13 @@
+{
+    "type": "object",
+    "fields":[
+        {
+            "type": "number",
+            "name": "minutes_asleep"
+        },
+        {
+            "type": "number",
+            "name": "time_in_bed"
+        }
+    ]
+}
