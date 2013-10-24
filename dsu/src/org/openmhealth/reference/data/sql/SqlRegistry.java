@@ -6,6 +6,9 @@ import java.sql.SQLException;
 import java.util.LinkedList;
 import java.util.List;
 
+import name.jenkins.paul.john.concordia.Concordia;
+import name.jenkins.paul.john.concordia.exception.ConcordiaException;
+
 import org.mongojack.internal.MongoJackModule;
 import org.openmhealth.reference.concordia.OmhValidationController;
 import org.openmhealth.reference.data.Registry;
@@ -237,14 +240,29 @@ public class SqlRegistry
 											"Error reading the schema.",
 											e);
 								}
-								
-								return
-									new Schema(
-										id,
-										version,
-										schema,
-										OmhValidationController
-											.VALIDATION_CONTROLLER);
+
+								// FIXME: Highly inefficient.
+								try {
+									return
+										new Schema(
+											id,
+											version,
+											new Concordia(
+												schema.toString(),
+												OmhValidationController
+													.VALIDATION_CONTROLLER));
+								}
+								catch(
+									OmhException |
+									IllegalArgumentException |
+									IOException |
+									ConcordiaException e) {
+									
+									throw
+										new SQLException(
+											"The schema was invalid.",
+											e);
+								}
 							}
 						});
 		}
@@ -398,13 +416,28 @@ public class SqlRegistry
 											e);
 								}
 								
-								return
-									new Schema(
-										id,
-										version,
-										schema,
-										OmhValidationController
-											.VALIDATION_CONTROLLER);
+								// FIXME: Highly inefficient.
+								try {
+									return
+										new Schema(
+											id,
+											version,
+											new Concordia(
+												schema.toString(),
+												OmhValidationController
+													.VALIDATION_CONTROLLER));
+								}
+								catch(
+									OmhException |
+									IllegalArgumentException |
+									IOException |
+									ConcordiaException e) {
+									
+									throw
+										new SQLException(
+											"The schema was invalid.",
+											e);
+								}
 							}
 						});
 		}

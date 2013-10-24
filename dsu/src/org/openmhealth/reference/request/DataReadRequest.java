@@ -313,7 +313,9 @@ public class DataReadRequest extends ListRequest<Data> {
 					.getData(
 						username, 
 						schemaId, 
-						version, 
+						version,
+						startDate,
+						endDate,
 						columnList, 
 						getNumToSkip(), 
 						getNumToReturn());

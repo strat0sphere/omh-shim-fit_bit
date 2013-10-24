@@ -15,8 +15,11 @@
  ******************************************************************************/
 package org.openmhealth.reference.domain;
 
+import java.util.Collections;
+
+import name.jenkins.paul.john.concordia.Concordia;
+import name.jenkins.paul.john.concordia.exception.ConcordiaException;
 import name.jenkins.paul.john.concordia.schema.ObjectSchema;
-import name.jenkins.paul.john.concordia.validator.ValidationController;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -48,9 +51,9 @@ public class SchemaTest {
 	 */
 	public static final long VERSION = 1;
 	/**
-	 * A valid schema to use for testing.
+	 * The {@link Concordia} to use for testing.
 	 */
-	public static final JsonNode SCHEMA;
+	public static final Concordia CONCORDIA;
 	static {
 		// Build the schema as an object type with no fields.
 		ObjectNode schemaRoot = new ObjectNode(JsonNodeFactory.instance);
@@ -62,14 +65,25 @@ public class SchemaTest {
 			.put(
 				ObjectSchema.JSON_KEY_FIELDS,
 				new ArrayNode(JsonNodeFactory.instance));
-		// Save the schema.
-		SCHEMA = schemaRoot;
+		// Create the schema.
+		try {
+			CONCORDIA =
+				new Concordia(
+					new ObjectSchema(
+						null, 
+						false, 
+						null, 
+						Collections.
+							<name.jenkins.paul.john.concordia.schema.Schema>
+							emptyList()),
+					OmhValidationController.VALIDATION_CONTROLLER);
+		}
+		catch(OmhException | IllegalArgumentException | ConcordiaException e) {
+			throw new IllegalStateException(
+				"Couldn't create the default Concordia to use for the tests.",
+				e);
+		}
 	}
-	/**
-	 * A mirror of The Open mHealth validation controller to use for testing. 
-	 */
-	public static final ValidationController CONTROLLER =
-		OmhValidationController.VALIDATION_CONTROLLER;
 	/**
 	 * The owner username to use for testing.
 	 */
@@ -85,7 +99,7 @@ public class SchemaTest {
 		META_DATA = builder.build();
 	}
 	/**
-	 * The data that conforms to the {@link #SCHEMA} to use for testing.
+	 * The data that conforms to the {@link #CONCORDIA} to use for testing.
 	 */
 	public static final JsonNode DATA =
 		new ObjectNode(JsonNodeFactory.instance);
@@ -95,7 +109,7 @@ public class SchemaTest {
 	 */
 	@Test(expected = OmhException.class)
 	public void testSchemaIdNull() {
-		new Schema(null, VERSION, SCHEMA, CONTROLLER);
+		new Schema(null, VERSION, CONCORDIA);
 	}
 
 	/**
@@ -103,7 +117,7 @@ public class SchemaTest {
 	 */
 	@Test(expected = OmhException.class)
 	public void testSchemaIdEmpty() {
-		new Schema("", VERSION, SCHEMA, CONTROLLER);
+		new Schema("", VERSION, CONCORDIA);
 	}
 
 	/**
@@ -111,7 +125,7 @@ public class SchemaTest {
 	 */
 	@Test(expected = OmhException.class)
 	public void testSchemaIdWhitespace() {
-		new Schema("\t", VERSION, SCHEMA, CONTROLLER);
+		new Schema("\t", VERSION, CONCORDIA);
 	}
 
 	/**
@@ -119,23 +133,7 @@ public class SchemaTest {
 	 */
 	@Test(expected = OmhException.class)
 	public void testSchemaSchemaNull() {
-		new Schema(ID, VERSION, null, CONTROLLER);
-	}
-
-	/**
-	 * Test that an exception is thrown when the schema is not a valid schema.
-	 */
-	@Test(expected = OmhException.class)
-	public void testSchemaSchemaInvalid() {
-		new Schema(ID, VERSION, BooleanNode.TRUE, CONTROLLER);
-	}
-
-	/**
-	 * Test that an exception is thrown when the controller is null.
-	 */
-	@Test(expected = OmhException.class)
-	public void testSchemaControllerNull() {
-		new Schema(ID, VERSION, SCHEMA, null);
+		new Schema(ID, VERSION, null);
 	}
 
 	/**
@@ -144,7 +142,7 @@ public class SchemaTest {
 	 */
 	@Test
 	public void testSchema() {
-		new Schema(ID, VERSION, SCHEMA, CONTROLLER);
+		new Schema(ID, VERSION, CONCORDIA);
 	}
 
 	/**
@@ -152,7 +150,7 @@ public class SchemaTest {
 	 */
 	@Test
 	public void testGetId() {
-		Schema schema = new Schema(ID, VERSION, SCHEMA, CONTROLLER);
+		Schema schema = new Schema(ID, VERSION, CONCORDIA);
 		Assert.assertEquals(ID, schema.getId());
 	}
 
@@ -161,7 +159,7 @@ public class SchemaTest {
 	 */
 	@Test
 	public void testGetVersion() {
-		Schema schema = new Schema(ID, VERSION, SCHEMA, CONTROLLER);
+		Schema schema = new Schema(ID, VERSION, CONCORDIA);
 		Assert.assertEquals(VERSION, schema.getVersion());
 	}
 
@@ -170,7 +168,7 @@ public class SchemaTest {
 	 */
 	@Test(expected = OmhException.class)
 	public void testValidateDataOwnerNull() {
-		Schema schema = new Schema(ID, VERSION, SCHEMA, CONTROLLER);
+		Schema schema = new Schema(ID, VERSION, CONCORDIA);
 		schema.validateData(null, META_DATA, DATA);
 	}
 
@@ -179,7 +177,7 @@ public class SchemaTest {
 	 */
 	@Test
 	public void testValidateDataMetaDataNull() {
-		Schema schema = new Schema(ID, VERSION, SCHEMA, CONTROLLER);
+		Schema schema = new Schema(ID, VERSION, CONCORDIA);
 		schema.validateData(OWNER, null, DATA);
 	}
 
@@ -188,7 +186,7 @@ public class SchemaTest {
 	 */
 	@Test(expected = OmhException.class)
 	public void testValidateDataDataNull() {
-		Schema schema = new Schema(ID, VERSION, SCHEMA, CONTROLLER);
+		Schema schema = new Schema(ID, VERSION, CONCORDIA);
 		schema.validateData(OWNER, META_DATA, null);
 	}
 
@@ -197,7 +195,7 @@ public class SchemaTest {
 	 */
 	@Test(expected = OmhException.class)
 	public void testValidateDataDataInvalid() {
-		Schema schema = new Schema(ID, VERSION, SCHEMA, CONTROLLER);
+		Schema schema = new Schema(ID, VERSION, CONCORDIA);
 		schema.validateData(OWNER, META_DATA, BooleanNode.TRUE);
 	}
 
@@ -206,7 +204,7 @@ public class SchemaTest {
 	 */
 	@Test
 	public void testValidateData() {
-		Schema schema = new Schema(ID, VERSION, SCHEMA, CONTROLLER);
+		Schema schema = new Schema(ID, VERSION, CONCORDIA);
 		schema.validateData(OWNER, META_DATA, DATA);
 	}
 

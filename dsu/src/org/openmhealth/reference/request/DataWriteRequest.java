@@ -23,21 +23,16 @@ import org.openmhealth.reference.data.DataSet;
 import org.openmhealth.reference.data.Registry;
 import org.openmhealth.reference.domain.AuthenticationToken;
 import org.openmhealth.reference.domain.Data;
-import org.openmhealth.reference.domain.MetaData;
 import org.openmhealth.reference.domain.MultiValueResult;
 import org.openmhealth.reference.domain.Schema;
 import org.openmhealth.reference.domain.User;
 import org.openmhealth.reference.exception.InvalidAuthenticationException;
 import org.openmhealth.reference.exception.OmhException;
 
-import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.MappingJsonFactory;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * <p>
@@ -47,12 +42,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
  * @author John Jenkins
  */
 public class DataWriteRequest extends Request<Object> {
-	/**
-	 * The JSON factory that is used to create the parser that will be used to
-	 * parse the data.
-	 */
-	private static final JsonFactory JSON_FACTORY = new MappingJsonFactory();
-	
 	/**
 	 * The authentication token for the requesting user.
 	 */
@@ -144,80 +133,36 @@ public class DataWriteRequest extends Request<Object> {
 		// Get the user that owns this token.
 		User requestingUser = authToken.getUser();
 		
-		// Parse the data.
-		JsonNode dataNode;
-		try {
-			dataNode =
-				JSON_FACTORY
-					.createJsonParser(data).readValueAs(JsonNode.class);
-		}
-		catch(JsonParseException e) {
-			throw new OmhException("The data was not well-formed JSON.", e);
-		}
-		catch(JsonProcessingException e) {
-			throw new OmhException("The data was not well-formed JSON.", e);
-		}
-		catch(IOException e) {
-			throw new OmhException("The data could not be read.", e);
-		}
-		
-		// Make sure it is a JSON array.
-		if(! (dataNode instanceof ArrayNode)) {
-			throw new OmhException("The data was not a JSON array.");
-		}
-		ArrayNode dataArray = (ArrayNode) dataNode;
-		
-		// Get the number of data points.
-		int numDataPoints = dataArray.size();
-		
 		// Create the result list of data points.
-		List<Data> dataPoints = new ArrayList<Data>(numDataPoints);
+		List<Data> dataPoints = new ArrayList<Data>();
 		
 		// Create a new ObjectMapper that will be used to convert the meta-data
 		// node into a MetaData object.
 		ObjectMapper mapper = new ObjectMapper();
 		
-		// For each element in the array, be sure it is a JSON object that
-		// represents a valid data point for this schema.
-		for(int i = 0; i < numDataPoints; i++) {
-			// Get the current data point.
-			JsonNode dataPoint = dataArray.get(i);
-			
-			// Validate that it is a JSON object.
-			if(! (dataPoint instanceof ObjectNode)) {
-				throw
-					new OmhException(
-						"A data point was not a JSON object: " + i);
-			}
-			ObjectNode dataObject = (ObjectNode) dataPoint;
-			
-			// Attempt to get the meta-data;
-			MetaData metaData = null;
-			JsonNode metaDataNode = dataObject.get(Data.JSON_KEY_METADATA);
-			if(metaDataNode != null) {
-				metaData = mapper.convertValue(metaDataNode, MetaData.class);
-			}
-			
-			// Attempt to get the schema data.
-			JsonNode schemaData = dataObject.get(Data.JSON_KEY_DATA);
-			
-			// If the data is missing, fail the request.
-			if(schemaData == null) {
-				throw
-					new OmhException(
-						"A data point's '" +
-							Data.JSON_KEY_DATA +
-							"' field is missing.");
-			}
-			
-			// Create and add the point to the set of data.
-			dataPoints
-				.add(
-					schema
-						.validateData(
-							requestingUser.getUsername(),
-							metaData,
-							schemaData));
+		// Parse the data.
+		List<Data.Builder> builders;
+		try {
+			builders =
+				mapper
+					.readValue(
+						data,
+						new TypeReference<List<Data.Builder>>(){});
+		}
+		catch(JsonParseException e) {
+			throw new OmhException("The data was not valid JSON.", e);
+		}
+		catch(JsonProcessingException e) {
+			throw new OmhException("The data was not valid JSON.", e);
+		}
+		catch(IOException e) {
+			throw new OmhException("Could not read the data.", e);
+		}
+
+		// Validate and build each point.
+		for(Data.Builder builder : builders) {
+			builder.setOwner(requestingUser.getUsername());
+			dataPoints.add(builder.build(schema));
 		}
 		
 		// Store the data.

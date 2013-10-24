@@ -15,7 +15,7 @@
  ******************************************************************************/
 package org.openmhealth.reference.domain.mongodb;
 
-import name.jenkins.paul.john.concordia.validator.ValidationController;
+import name.jenkins.paul.john.concordia.Concordia;
 
 import org.mongojack.MongoCollection;
 import org.openmhealth.reference.data.Registry;
@@ -23,11 +23,9 @@ import org.openmhealth.reference.domain.Schema;
 import org.openmhealth.reference.domain.ThirdParty;
 import org.openmhealth.reference.exception.OmhException;
 
-import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
 
 /**
  * <p>
@@ -76,12 +74,10 @@ public class MongoSchema extends Schema implements MongoDbObject {
 		@JsonProperty(DATABASE_FIELD_ID) final String dbId,
 		@JsonProperty(JSON_KEY_ID) final String id,
 		@JsonProperty(JSON_KEY_VERSION) final long version,
-		@JsonProperty(JSON_KEY_SCHEMA) final JsonNode schema,
-		@JacksonInject(JSON_KEY_VALIDATION_CONTROLLER)
-			final ValidationController controller)
+		@JsonProperty(JSON_KEY_SCHEMA) final Concordia schema)
 		throws OmhException {
 
-		super(id, version, schema, controller);
+		super(id, version, schema);
 		
 		// Store the MongoDB ID.
 		if(dbId == null) {

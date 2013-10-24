@@ -30,6 +30,9 @@
  */
 package org.openmhealth.reference.util;
 
+import java.io.IOException;
+
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -37,6 +40,13 @@ import org.joda.time.format.DateTimeFormatterBuilder;
 import org.joda.time.format.DateTimeParser;
 import org.joda.time.format.DateTimeParserBucket;
 import org.joda.time.format.ISODateTimeFormat;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
 
 /**
  * <p>
@@ -60,7 +70,39 @@ import org.joda.time.format.ISODateTimeFormat;
  * 
  * @author John Jenkins
  */
+@Component
 public class ISOW3CDateTimeFormat {
+	/**
+	 * <p>
+	 * A de-serializer for de-serializing text into a DateTime object.
+	 * </p> 
+	 *
+	 * @author John Jenkins
+	 */
+	public static class Deserializer extends JsonDeserializer<DateTime> {
+		/*
+		 * (non-Javadoc)
+		 * @see com.fasterxml.jackson.databind.JsonDeserializer#deserialize(com.fasterxml.jackson.core.JsonParser, com.fasterxml.jackson.databind.DeserializationContext)
+		 */
+		@Override
+		public DateTime deserialize(
+			final JsonParser parser,
+			final DeserializationContext context)
+			throws IOException, JsonProcessingException {
+			
+			try {
+				return any().parseDateTime(parser.getText());
+			}
+			catch(IllegalArgumentException e) {
+				throw
+					new JsonParseException(
+						"The date-time is invalid.",
+						parser.getCurrentLocation(),
+						e);
+			}
+		}
+	}
+	
 	/**
 	 * <p>
 	 * A DateTimeParser that implements the W3C profile of the ISO 8601

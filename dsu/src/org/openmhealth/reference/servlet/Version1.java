@@ -74,6 +74,7 @@ import org.openmhealth.reference.request.SchemaVersionsRequest;
 import org.openmhealth.reference.request.UserActivationRequest;
 import org.openmhealth.reference.request.UserAuthorizedDomainRequest;
 import org.openmhealth.reference.request.UserRegistrationRequest;
+import org.openmhealth.reference.util.ISOW3CDateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -1439,11 +1440,11 @@ public class Version1 {
 		@RequestParam(
 			value = PARAM_DATE_START,
 			required = false)
-			final DateTime startDate,
+			final String startDate,
 		@RequestParam(
 			value = PARAM_DATE_END,
 			required = false)
-			final DateTime endDate,
+			final String endDate,
 		@RequestParam(
 			value = PARAM_COLUMN_LIST,
 			required = false)
@@ -1460,6 +1461,27 @@ public class Version1 {
 			final long numToReturn,
 		final HttpServletRequest request,
 		final HttpServletResponse response) {
+		
+		// Parse the start and end dates.
+		DateTime parsedStartDate = null, parsedEndDate = null;
+		if(startDate != null) {
+			try {
+				parsedStartDate =
+					ISOW3CDateTimeFormat.any().parseDateTime(startDate);
+			}
+			catch(IllegalArgumentException e) {
+				throw new OmhException("The start date is invalid.", e);
+			}
+		}
+		if(endDate != null) {
+			try {
+				parsedEndDate =
+					ISOW3CDateTimeFormat.any().parseDateTime(endDate);
+			}
+			catch(IllegalArgumentException e) {
+				throw new OmhException("The end date is invalid.", e);
+			}
+		}
 
 		// Handle the request.
 		return 
@@ -1480,8 +1502,8 @@ public class Version1 {
 					schemaId,
 					version,
 					owner,
-					startDate,
-					endDate,
+					parsedStartDate,
+					parsedEndDate,
 					columnList,
 					numToSkip,
 					numToReturn));

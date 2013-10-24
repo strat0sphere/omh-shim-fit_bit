@@ -17,6 +17,7 @@ package org.openmhealth.reference.data.mongodb;
 
 import java.util.List;
 
+import org.joda.time.DateTime;
 import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
 import org.openmhealth.reference.data.DataSet;
@@ -101,13 +102,15 @@ public class MongoDataSet extends DataSet {
 
 	/*
 	 * (non-Javadoc)
-	 * @see org.openmhealth.reference.data.DataSet#getData(java.lang.String, java.lang.String, long, org.openmhealth.reference.domain.ColumnList, java.lang.Long, java.lang.Long)
+	 * @see org.openmhealth.reference.data.DataSet#getData(java.lang.String, java.lang.String, long, org.joda.time.DateTime, org.joda.time.DateTime, org.openmhealth.reference.domain.ColumnList, long, long)
 	 */
 	@Override
 	public MultiValueResult<Data> getData(
 		final String owner,
 		final String schemaId,
 		final long version,
+		final DateTime startDate,
+		final DateTime endDate,
 		final ColumnList columnList,
 		final long numToSkip,
 		final long numToReturn) {
@@ -131,6 +134,26 @@ public class MongoDataSet extends DataSet {
 		
 		// Only select data for a given version of the the given schema.
 		queryBuilder.and(Schema.JSON_KEY_VERSION).is(version);
+		
+		// Only select data on or after the start date.
+		if(startDate != null) {
+			queryBuilder
+				.and(
+					Data.JSON_KEY_METADATA +
+						"." +
+						MetaData.JSON_KEY_TIMESTAMP)
+				.greaterThan(startDate.toString());
+		}
+		
+		// Only select data on or before the end date.
+		if(endDate != null) {
+			queryBuilder
+				.and(
+					Data.JSON_KEY_METADATA +
+						"." +
+						MetaData.JSON_KEY_TIMESTAMP)
+				.greaterThan(endDate.toString());
+		}
 		
 		// Create the projection.
 		DBObject projection = new BasicDBObject();

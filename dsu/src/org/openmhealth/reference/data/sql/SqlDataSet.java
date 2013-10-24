@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.joda.time.DateTime;
 import org.openmhealth.reference.data.DataSet;
 import org.openmhealth.reference.data.Registry;
 import org.openmhealth.reference.data.UserBin;
@@ -158,6 +159,8 @@ public class SqlDataSet extends DataSet implements SqlDaoInterface {
 		final String owner,
 		final String schemaId,
 		final long version,
+		final DateTime startDate,
+		final DateTime endDate,
 		final ColumnList columnList,
 		final long numToSkip,
 		final long numToReturn) {
@@ -218,6 +221,26 @@ public class SqlDataSet extends DataSet implements SqlDaoInterface {
 							// ID and version.
 							"AND " + Schema.JSON_KEY_ID + " = ? " +
 							"AND " + Schema.JSON_KEY_VERSION + " = ? " +
+							// Add the start date, if given.
+							((startDate == null) ? "" :
+								Data.JSON_KEY_METADATA + "_" +
+									MetaData.JSON_KEY_TIMESTAMP +
+									" >= " +
+									ISOW3CDateTimeFormat
+										.any()
+										.print(startDate) +
+									" "
+							) +
+							// Add the end date, if given.
+							((endDate == null) ? "" :
+								Data.JSON_KEY_METADATA + "_" +
+									MetaData.JSON_KEY_TIMESTAMP +
+									" <= " +
+									ISOW3CDateTimeFormat
+										.any()
+										.print(endDate) +
+									" "
+							) +
 							"LIMIT ?, ?",
 						new Object[] {
 							owner,
@@ -395,7 +418,7 @@ public class SqlDataSet extends DataSet implements SqlDaoInterface {
 						MetaData.JSON_KEY_ID + " varchar(36), " +
 					// Add the meta-data's timestamp field.
 					Data.JSON_KEY_METADATA + "_" +
-						MetaData.JSON_KEY_TIMESTAMP + " varchar(255), " +
+						MetaData.JSON_KEY_TIMESTAMP + " timestamp, " +
 					// Add the data field.
 					Data.JSON_KEY_DATA + " text NOT NULL, " +
 					// Create the primary key.

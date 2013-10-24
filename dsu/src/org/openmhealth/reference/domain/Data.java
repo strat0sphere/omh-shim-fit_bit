@@ -18,7 +18,6 @@ package org.openmhealth.reference.domain;
 import org.openmhealth.reference.exception.OmhException;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -34,6 +33,60 @@ import com.fasterxml.jackson.databind.JsonNode;
  * @author John Jenkins
  */
 public class Data implements OmhObject {
+	/**
+	 * <p>
+	 * A builder for {@link Data} objects.
+	 * </p>
+	 *
+	 * @author John Jenkins
+	 */
+	public static class Builder {
+		private String owner;
+		private MetaData metaData;
+		private JsonNode data;
+		
+		/**
+		 * Builds a new Builder object.
+		 * 
+		 * @param metaData
+		 *        The meta-data about the point.
+		 * 
+		 * @param data
+		 *        The point's data.
+		 */
+		@JsonCreator
+		public Builder(
+			@JsonProperty(JSON_KEY_METADATA) final MetaData metaData,
+			@JsonProperty(JSON_KEY_DATA) final JsonNode data) {
+			
+			this.metaData = metaData;
+			this.data = data;
+		}
+		
+		/**
+		 * Sets the owner of the data point.
+		 * 
+		 * @param owner
+		 *        The owner of the data point.
+		 */
+		public void setOwner(final String owner) {
+			this.owner = owner;
+		}
+		
+		/**
+		 * Uses a Schema to validate some data and, if successful, creates a
+		 * Data object.
+		 * 
+		 * @param schema
+		 *        The schema to use to validate the new Data point.
+		 * 
+		 * @return The validated data point.
+		 */
+		public Data build(final Schema schema) {
+			return schema.validateData(owner, metaData, data);
+		}
+	}
+	
 	/**
 	 * The version of this class used for serialization purposes.
 	 */
@@ -60,12 +113,6 @@ public class Data implements OmhObject {
 	private final String owner;
 
 	/**
-	 * The schema for this node. This is used when creating the object but may
-	 * be null if deserialized.
-	 */
-	@JsonIgnore
-	private final Schema schema;
-	/**
 	 * The unique identifier for the schema that validated this data. This
 	 * should always exist, even if the schema is null.
 	 */
@@ -88,56 +135,9 @@ public class Data implements OmhObject {
 	 */
 	@JsonProperty(JSON_KEY_DATA)
 	private final JsonNode data;
-
-	/**
-	 * Creates a new data object.
-	 * 
-	 * @param owner
-	 * 		  The identifier for the user that owns the data.
-	 * 
-	 * @param schema
-	 *        The schema to which this data must conform.
-	 * 
-	 * @param metaData
-	 *        The meta-data for this data.
-	 * 
-	 * @param data
-	 *        The data.
-	 * 
-	 * @throws OmhException
-	 *         Any of the parameters is null.
-	 */
-	public Data(
-		final String owner,
-		final Schema schema,
-		final MetaData metaData,
-		final JsonNode data)
-		throws OmhException {
-
-		if(owner == null) {
-			throw new OmhException("The owner is null.");
-		}
-		if(schema == null) {
-			throw new OmhException("The schema is null.");
-		}
-		if(data == null) {
-			throw new OmhException("The data is null.");
-		}
-
-		this.owner = owner;
-		
-		this.schema = schema;
-		schemaId = schema.getId();
-		schemaVersion = schema.getVersion();
-		
-		this.metaData = metaData;
-		this.data = data;
-	}
 	
 	/**
-	 * Creates a new data object presumably from an existing one since all of
-	 * the fields are given. If creating a new data point, it is recommended
-	 * that {@link #Data(String, Schema, MetaData, JsonNode)} be used.
+	 * Creates a new Data object.
 	 * 
 	 * @param owner
 	 * 		  The identifier for the user that owns the data.
@@ -177,7 +177,6 @@ public class Data implements OmhObject {
 		}
 		
 		this.owner = owner;
-		this.schema = null;
 		this.schemaId = schemaId;
 		this.schemaVersion = schemaVersion;
 		this.metaData = metaData;

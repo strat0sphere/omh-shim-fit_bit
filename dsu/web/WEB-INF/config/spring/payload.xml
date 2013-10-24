@@ -40,10 +40,10 @@
             <bean
                 class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
 
-            <property name="objectMapper">
-                <bean class="org.openmhealth.reference.util.OmhObjectMapper" />
-            </property>
-        </bean>
+                <property name="objectMapper">
+                    <bean class="org.openmhealth.reference.util.OmhObjectMapper" />
+                </property>
+            </bean>
         </mvc:message-converters>
     </mvc:annotation-driven>
         

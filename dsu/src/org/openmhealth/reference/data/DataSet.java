@@ -17,6 +17,7 @@ package org.openmhealth.reference.data;
 
 import java.util.List;
 
+import org.joda.time.DateTime;
 import org.openmhealth.reference.domain.ColumnList;
 import org.openmhealth.reference.domain.Data;
 import org.openmhealth.reference.domain.MultiValueResult;
@@ -80,6 +81,12 @@ public abstract class DataSet {
 	 *        The version of the schema for the requested data. This parameter
 	 *        is required.
 	 * 
+	 * @param startDate
+	 *        The earliest point that should be returned.
+	 * 
+	 * @param endDate
+	 *        The latest point that should be returned.
+	 * 
 	 * @param columnList
 	 *        The list of columns within the data to return. This can include
 	 *        both meta-data and data columns. This is optional, and null
@@ -98,6 +105,8 @@ public abstract class DataSet {
 		final String owner,
 		final String schemaId,
 		final long version,
+		final DateTime startDate,
+		final DateTime endDate,
 		final ColumnList columnList,
 		final long numToSkip,
 		final long numToReturn);

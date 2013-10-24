@@ -9,8 +9,13 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
 
+import name.jenkins.paul.john.concordia.Concordia;
+
+import org.openmhealth.reference.concordia.OmhValidationController;
+
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ser.BeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter.SerializeExceptFilter;
@@ -90,17 +95,25 @@ public class OmhObjectMapper extends ObjectMapper {
     private static final SimpleFilterProvider FILTER_PROVIDER =
     	new SimpleFilterProvider();
 
-    /**
-     * Creates the object mapper and initializes the filters. This is private
-     * as it should only ever be called by Spring via reflection.
-     */
-    private OmhObjectMapper() {
-    	// Ensure that unknown fields are ignored.
-    	FILTER_PROVIDER.setFailOnUnknownId(false);
-    	
-    	// Save the FilterProvider in this ObjectMapper.
-        setFilters(FILTER_PROVIDER);
-    }
+	/**
+	 * Creates the object mapper and initializes the filters. This is private
+	 * as it should only ever be called by Spring via reflection.
+	 */
+	private OmhObjectMapper() {
+		// Ensure that unknown fields are ignored.
+		FILTER_PROVIDER.setFailOnUnknownId(false);
+		
+		// Save the FilterProvider in this ObjectMapper.
+	    setFilters(FILTER_PROVIDER);
+	    
+	    // Add our Concordia validation controller.
+	    InjectableValues.Std injectableValues = new InjectableValues.Std();
+	    injectableValues
+	    	.addValue(
+	    		Concordia.JACKSON_INJECTABLE_VALIDATION_CONTROLLER,
+	    		OmhValidationController.VALIDATION_CONTROLLER);
+	    setInjectableValues(injectableValues);
+	}
     
     /**
 	 * Registers a new field filter and ensures that its desired fields are

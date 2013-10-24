@@ -19,6 +19,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import name.jenkins.paul.john.concordia.Concordia;
+
 import org.mongojack.DBCursor;
 import org.mongojack.DBQuery;
 import org.mongojack.DBQuery.Query;
@@ -61,7 +63,7 @@ public class MongoRegistry extends Registry {
 		InjectableValues.Std injectableValues = new InjectableValues.Std();
 		injectableValues
 			.addValue(
-				Schema.JSON_KEY_VALIDATION_CONTROLLER,
+				Concordia.JACKSON_INJECTABLE_VALIDATION_CONTROLLER,
 				OmhValidationController.VALIDATION_CONTROLLER);
 		mapper.setInjectableValues(injectableValues);
 		

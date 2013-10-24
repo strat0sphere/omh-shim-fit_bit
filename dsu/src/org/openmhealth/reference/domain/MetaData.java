@@ -17,11 +17,15 @@ package org.openmhealth.reference.domain;
 
 import org.joda.time.DateTime;
 import org.openmhealth.reference.exception.OmhException;
+import org.openmhealth.reference.util.ISOW3CDateTimeFormat;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
 /**
  * <p>
@@ -162,10 +166,12 @@ public class MetaData implements OmhObject {
 	@JsonInclude(Include.NON_NULL)
 	private final String id;
 	/**
-	 * The timestamp for the point.
+	 * The time-stamp for the point.
 	 */
 	@JsonProperty(JSON_KEY_TIMESTAMP)
 	@JsonInclude(Include.NON_NULL)
+	@JsonSerialize(using = ToStringSerializer.class)
+	@JsonDeserialize(using = ISOW3CDateTimeFormat.Deserializer.class)
 	private final DateTime timestamp;
 
 	/**

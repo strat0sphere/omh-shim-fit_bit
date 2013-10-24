@@ -15,8 +15,6 @@
  ******************************************************************************/
 package org.openmhealth.reference.domain;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.regex.Pattern;
 
 import name.jenkins.paul.john.concordia.Concordia;
@@ -25,7 +23,6 @@ import name.jenkins.paul.john.concordia.validator.ValidationController;
 
 import org.openmhealth.reference.exception.OmhException;
 
-import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -100,25 +97,16 @@ public class Schema implements OmhObject {
 	 *        The version of this schema.
 	 * 
 	 * @param schema
-	 *        The specific schema.
-	 *        
-	 * @param controller
-	 *        The controller used to validate this schema and to validate any
-	 *        data when using the
-	 *        {@link #validateData(String, MetaData, JsonNode)} method.
+	 *        The Concordia schema that defines this Schema object.
 	 * 
 	 * @throws OmhException
 	 *         A parameter was invalid.
-	 *
-	 * @see #validateData(String, MetaData, JsonNode)
 	 */
 	@JsonCreator
 	public Schema(
 		@JsonProperty(JSON_KEY_ID) final String id,
 		@JsonProperty(JSON_KEY_VERSION) final long version,
-		@JsonProperty(JSON_KEY_SCHEMA) final JsonNode schema,
-		@JacksonInject(JSON_KEY_VALIDATION_CONTROLLER)
-			final ValidationController controller)
+		@JsonProperty(JSON_KEY_SCHEMA) final Concordia schema)
 		throws OmhException {
 
 		// Validate the ID.
@@ -139,20 +127,8 @@ public class Schema implements OmhObject {
 		if(schema == null) {
 			throw new OmhException("The schema is null.");
 		}
-		try {
-			this.schema =
-				new Concordia(
-					new ByteArrayInputStream(schema.toString().getBytes()),
-					controller);
-		}
-		catch(IllegalArgumentException e) {
-			throw new OmhException("The schema is missing.", e);
-		}
-		catch(ConcordiaException e) {
-			throw new OmhException("The schema is invalid.", e);
-		}
-		catch(IOException e) {
-			throw new OmhException("The schema cannot be read.", e);
+		else {
+			this.schema = schema;
 		}
 	}
 
@@ -222,7 +198,7 @@ public class Schema implements OmhObject {
 		}
 		
 		// Return the result.
-		return new Data(owner, this, metaData, data);
+		return new Data(owner, id, version, metaData, data);
 	}
 
 	/**

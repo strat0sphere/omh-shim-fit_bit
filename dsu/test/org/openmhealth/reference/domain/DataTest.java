@@ -15,16 +15,12 @@
  ******************************************************************************/
 package org.openmhealth.reference.domain;
 
-import name.jenkins.paul.john.concordia.schema.ObjectSchema;
-import name.jenkins.paul.john.concordia.validator.ValidationController;
-
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 import org.openmhealth.reference.exception.OmhException;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -43,26 +39,11 @@ public class DataTest {
 	/**
 	 * The {@link Schema} to use for testing.
 	 */
-	public static final Schema SCHEMA;
-	static {
-		// Build the schema as an object type with no fields.
-		ObjectNode schemaRoot = new ObjectNode(JsonNodeFactory.instance);
-		schemaRoot
-			.put(
-				name.jenkins.paul.john.concordia.schema.Schema.JSON_KEY_TYPE,
-				ObjectSchema.TYPE_ID);
-		schemaRoot
-			.put(
-				ObjectSchema.JSON_KEY_FIELDS,
-				new ArrayNode(JsonNodeFactory.instance));
-		// Create the schema.
-		SCHEMA =
-			new Schema(
-				SchemaTest.ID,
-				1,
-				schemaRoot,
-				ValidationController.BASIC_CONTROLLER);
-	}
+	public static final Schema SCHEMA =
+		new Schema(
+			SchemaTest.ID,
+			1,
+			SchemaTest.CONCORDIA);
 	/**
 	 * The {@link MetaData} to use for testing.
 	 */
@@ -74,50 +55,10 @@ public class DataTest {
 		META_DATA = builder.build();
 	}
 	/**
-	 * The data that conforms to the {@link #SCHEMA} to use for testing.
+	 * The data that conforms to the {@link #CONCORDIA} to use for testing.
 	 */
 	public static final JsonNode DATA =
 		new ObjectNode(JsonNodeFactory.instance);
-
-	/**
-	 * Test that an exception is thrown when the owner is null.
-	 */
-	@Test(expected = OmhException.class)
-	public void testDataStringSchemaMetaDataJsonNodeOwnerNull() {
-		new Data(null, SCHEMA, META_DATA, DATA);
-	}
-
-	/**
-	 * Test that an exception is thrown when the schema is null.
-	 */
-	@Test(expected = OmhException.class)
-	public void testDataStringSchemaMetaDataJsonNodeSchemaNull() {
-		new Data(OWNER, null, META_DATA, DATA);
-	}
-
-	/**
-	 * Test that it is valid to create a Data object without meta-data.
-	 */
-	@Test
-	public void testDataStringSchemaMetaDataJsonNodeMetaDataNull() {
-		new Data(OWNER, SCHEMA, null, DATA);
-	}
-
-	/**
-	 * Test that an exception is thrown when the data is null.
-	 */
-	@Test(expected = OmhException.class)
-	public void testDataStringSchemaMetaDataJsonNodeDataNull() {
-		new Data(OWNER, SCHEMA, META_DATA, null);
-	}
-
-	/**
-	 * Test that a data object can be created from valid parameters.
-	 */
-	@Test
-	public void testDataStringSchemaMetaDataJsonNode() {
-		new Data(OWNER, SCHEMA, META_DATA, DATA);
-	}
 
 	/**
 	 * Test that an exception is thrown when the owner is null.

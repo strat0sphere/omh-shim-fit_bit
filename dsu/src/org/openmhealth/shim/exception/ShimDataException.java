@@ -30,7 +30,7 @@ public class ShimDataException extends ShimException {
 	 *        The reason this exception is being thrown.
 	 * 
 	 * @param cause
-	 *        The throwable that caused this exception to be thrown.
+	 *        The Throwable that caused this exception to be thrown.
 	 */
 	public ShimDataException(final String reason, final Throwable cause) {
 		super(reason, cause);
