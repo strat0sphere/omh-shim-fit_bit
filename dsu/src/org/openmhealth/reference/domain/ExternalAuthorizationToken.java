@@ -187,6 +187,15 @@ public class ExternalAuthorizationToken implements OmhObject {
 	}
 
 	/**
+	 * Returns the token secret to use to request data.
+	 * 
+	 * @return The token secret to use to request data.
+	 */
+	public String getAccessTokenSecret() {
+		return accessTokenSecret;
+	}
+
+	/**
 	 * Returns the token to exchange for a new access and refresh token.
 	 * 
 	 * @return The token to exchange for a new access and refresh token.
