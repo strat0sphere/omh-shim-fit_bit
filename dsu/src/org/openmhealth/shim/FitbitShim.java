@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import name.jenkins.paul.john.concordia.Concordia;
 import name.jenkins.paul.john.concordia.schema.ObjectSchema;
 import name.jenkins.paul.john.concordia.validator.ValidationController;
 
@@ -177,16 +178,15 @@ public class FitbitShim implements Shim {
         ObjectMapper objectMapper = new ObjectMapper();
         InputStream schemaStream =
             getClass().getClassLoader().getResourceAsStream(schemaResourcePath);
-        JsonNode schemaNode = null;
+        Concordia concordia = null;
         try {
-            schemaNode = objectMapper.readTree(schemaStream);
+            concordia = new Concordia(schemaStream);
         }
-        catch(IOException e) {
+        catch(Exception e) {
             throw new ShimSchemaException("Error reading schema.", e);
         }
                 
-        return new Schema(
-            id, 1, schemaNode, ValidationController.BASIC_CONTROLLER);
+        return new Schema(id, 1, concordia);
     }
 
 	public List<Data> getData(
@@ -215,14 +215,6 @@ public class FitbitShim implements Shim {
         credentials.setAccessTokenSecret(token.getAccessTokenSecret());
         credentialsCache.saveResourceCredentials(localUserDetail, credentials);
 
-        // Fetch the schema.
-        Schema schema = null;
-        try {
-            schema = getSchema(schemaId, 1L);
-        }
-        catch(ShimSchemaException e) {
-        }
-
         // Extract the data type and find the associated DataFetcher.
         String dataType = dataTypeFromSchemaId(schemaId);
         try {
@@ -250,7 +242,7 @@ public class FitbitShim implements Shim {
 
         return Arrays.asList(
             new Data(
-                token.getUsername(), schema, 
+                token.getUsername(), schemaId, version,
                 new MetaData(null, startDate),
                 dataPoint));
     }
