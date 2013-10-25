@@ -140,8 +140,11 @@ public class FitbitShim implements Shim {
     }
 
 	public List<String> getSchemaIds() {
-		return Collections.unmodifiableList(
-            new ArrayList<String>(dataFetcherMap.keySet()));
+        List<String> schemaIds = new ArrayList<String>();
+        for (String key : dataFetcherMap.keySet()) {
+            schemaIds.add(SCHEMA_PREFIX + key);
+        }
+        return schemaIds;
     }
 
 	public List<Long> getSchemaVersions(
