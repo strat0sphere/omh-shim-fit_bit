@@ -1,0 +1,9 @@
+{
+    "type": "object",
+    "fields":[
+        {
+            "type": "number",
+            "name": "diastolic_blood_pressure_mmhg"
+        }
+    ]
+}

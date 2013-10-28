@@ -1,0 +1,9 @@
+{
+    "type": "object",
+    "fields":[
+        {
+            "type": "number",
+            "name": "heart_pulse_bpm"
+        }
+    ]
+}

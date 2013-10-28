@@ -56,6 +56,10 @@ public class WithingsShim implements Shim {
         measureTypeMap.put("height_m", 4);
         measureTypeMap.put("fat_free_mass_kg", 5);
         measureTypeMap.put("fat_ratio_percent", 6);
+        measureTypeMap.put("fat_mass_kg", 8);
+        measureTypeMap.put("diastolic_blood_pressure_mmhg", 9);
+        measureTypeMap.put("systolic_blood_pressure_mmhg", 10);
+        measureTypeMap.put("heart_pulse_bpm", 11);
     }
 
     public WithingsShim() {
