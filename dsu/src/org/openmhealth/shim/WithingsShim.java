@@ -60,9 +60,6 @@ public class WithingsShim implements Shim {
         measureTypeMap.put("heart_pulse_bpm", 11);
     }
 
-    public WithingsShim() {
-    }
-
     public String getDomain() {
         return DOMAIN;
     }
