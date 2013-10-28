@@ -79,7 +79,22 @@ public class ShimUtil {
     }
 
     /**
-     * Constructs a Schema object for a schema ID.
+     * Constructs a Schema object for a schema ID. Schemas are read from JSON
+     * files found on the classpath. For example, the schema for version 1 of
+     * 'omh:fitbit:activity' would be found in a file called
+     * 'schema/fitbit/1/activity.json'.
+     *
+	 * @param id
+	 *        The schema ID.
+	 * 
+	 * @param version
+	 *        The schema version.
+	 * 
+	 * @return The schema for the given schema-ID version pair or null if the
+	 *         pair is unknown.
+	 * 
+	 * @throws ShimSchemaException
+	 *         The ID and/or version are null.
      */
     public static Schema getSchema(
         final String id,
