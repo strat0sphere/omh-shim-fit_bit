@@ -1,6 +1,5 @@
 package org.openmhealth.shim;
 
-import java.io.InputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -11,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import name.jenkins.paul.john.concordia.Concordia;
 import name.jenkins.paul.john.concordia.schema.ObjectSchema;
 import name.jenkins.paul.john.concordia.validator.ValidationController;
 
@@ -115,36 +113,7 @@ public class WithingsShim implements Shim {
 		final String id,
 		final Long version)
 		throws ShimSchemaException {
-        if (id == null) {
-            throw new ShimSchemaException("The given schema ID is null.");
-        }
-        if (version == null) {
-            throw new ShimSchemaException("The given schema version is null.");
-        }
-
-        // We only have a version 1 for now, so return null early for anything
-        // but 1.
-        if (!version.equals(1L)) {
-            return null;
-        }
-
-        String schemaResourcePath =
-            "/schema/" + getDomain() + "/" 
-            + ShimUtil.dataTypeFromSchemaId(id) + ".json";
-
-        // Load and parse the schema from the schema file.
-        ObjectMapper objectMapper = new ObjectMapper();
-        InputStream schemaStream =
-            getClass().getClassLoader().getResourceAsStream(schemaResourcePath);
-        Concordia concordia = null;
-        try {
-            concordia = new Concordia(schemaStream);
-        }
-        catch(Exception e) {
-            throw new ShimSchemaException("Error reading schema.", e);
-        }
-                
-        return new Schema(id, 1, concordia);
+        return ShimUtil.getSchema(id, version);
     }
 
 	public List<Data> getData(
