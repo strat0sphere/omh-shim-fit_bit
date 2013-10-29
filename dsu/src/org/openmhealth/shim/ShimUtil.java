@@ -150,14 +150,26 @@ public class ShimUtil {
             ShimUtil.class.getClassLoader()
                 .getResourceAsStream(propertiesResourcePath);
 
-        Properties properties = new Properties();
-        try {
-            properties.load(propertiesStream);
-        }
-        catch(IOException e) {
-            return null;
+        if (propertiesStream == null) {
+            throw new RuntimeException(
+                "Properties file '" + propertiesResourcePath + "' not found.");
         }
 
-        return properties.getProperty(key);
+        String value = null;
+        try {
+            Properties properties = new Properties();
+            properties.load(propertiesStream);
+            value = properties.getProperty(key);
+        }
+        catch(IOException e) {
+        }
+
+        if (value == null) {
+            throw new RuntimeException(
+                "Unable to load value of '" + key + "' from properties file '" 
+                + propertiesResourcePath + "'.");
+        }
+
+        return value;
     }
 }
