@@ -137,6 +137,14 @@ public class WithingsShim implements Shim {
             token.getAccessToken(), token.getAccessTokenSecret());
 
         // Build and sign the request URL.
+        StringBuilder dateParams = new StringBuilder();
+        if (startDate != null) {
+            dateParams.append("&startdate=" + startDate.getMillis() / 1000);
+        }
+        if (endDate != null) {
+            dateParams.append("&enddate=" + endDate.getMillis() / 1000);
+        }
+
         URL url = null;
         try {
             UrlStringRequestAdapter adapter = 
@@ -144,6 +152,7 @@ public class WithingsShim implements Shim {
                     "http://wbsapi.withings.net/measure"
                     + "?action=getmeas"
                     + "&devtype=1"
+                    + dateParams.toString()
                     + "&userid=2406179");
 
             consumer.sign(adapter);
@@ -177,6 +186,7 @@ public class WithingsShim implements Shim {
             throw new ShimDataException("Withings API request error", e);
         }
 
+        // Make sure there's no error status.
         JsonNode requestStatus = jsonData.get("status");
         if (requestStatus == null) {
             throw new ShimDataException("No request status in returned data");
@@ -210,6 +220,7 @@ public class WithingsShim implements Shim {
 
         // Filter the JSON for the measure type and build the output data.
         List<Data> outputData = new ArrayList<Data>();
+        long numSkipped = 0;
         for (int i = 0; i < measurementGroups.size(); ++i) {
             JsonNode measurementGroup = measurementGroups.get(i);
             JsonNode dateJson = measurementGroup.get("date");
@@ -228,6 +239,12 @@ public class WithingsShim implements Shim {
                 if (typeJson == null || valueJson == null
                     || typeJson.asInt() != measureType.intValue()) {
                     continue;
+                }
+
+                // Skip the required number before saving any.
+                if (numSkipped < numToSkip.longValue()) {
+                    ++numSkipped;
+                    break;
                 }
 
                 double value = valueJson.asDouble();
@@ -249,6 +266,11 @@ public class WithingsShim implements Shim {
                     new Data(token.getUsername(), schemaId, version.longValue(),
                         new MetaData(null, groupDateTime), outputJson));
 
+                break;
+            }
+
+            // Stop even we have enough data points.
+            if (outputData.size() >= numToReturn) {
                 break;
             }
         }
