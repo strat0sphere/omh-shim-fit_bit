@@ -35,6 +35,7 @@ import org.openmhealth.reference.exception.InvalidAuthorizationException;
 import org.openmhealth.reference.exception.NoSuchSchemaException;
 import org.openmhealth.reference.exception.OmhException;
 import org.openmhealth.reference.servlet.Version1;
+import org.openmhealth.reference.util.ISOW3CDateTimeFormat;
 import org.openmhealth.shim.Shim;
 import org.openmhealth.shim.ShimRegistry;
 
@@ -306,7 +307,6 @@ public class DataReadRequest extends ListRequest<Data> {
 		}
 		// Otherwise, handle the request ourselves.
 		else {
-			// FIXME: Add the start and end date parameters.
 			result =
 				DataSet
 					.getInstance()
@@ -339,9 +339,25 @@ public class DataReadRequest extends ListRequest<Data> {
 		// Create the result map.
 		Map<String, String> result = new HashMap<String, String>();
 		
-		// Add the owner if it's not the requesting user.
-		if(! authenticationToken.getUsername().equals(owner)) {
+		// Add the owner if given.
+		if(owner != null) {
 			result.put(Version1.PARAM_OWNER, owner);
+		}
+		
+		// Add the start date if given.
+		if(startDate != null) {
+			result
+				.put(
+					Version1.PARAM_DATE_START,
+					ISOW3CDateTimeFormat.any().print(startDate));
+		}
+		
+		// Add the start date if given.
+		if(endDate != null) {
+			result
+				.put(
+					Version1.PARAM_DATE_END,
+					ISOW3CDateTimeFormat.any().print(endDate));
 		}
 		
 		// Add the columns if they were given.

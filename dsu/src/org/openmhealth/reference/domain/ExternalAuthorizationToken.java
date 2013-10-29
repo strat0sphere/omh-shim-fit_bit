@@ -1,5 +1,8 @@
 package org.openmhealth.reference.domain;
 
+import java.util.Collections;
+import java.util.Map;
+
 import org.openmhealth.reference.exception.OmhException;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -39,6 +42,10 @@ public class ExternalAuthorizationToken implements OmhObject {
 	 * The JSON key for the time the token expires.
 	 */
 	public static final String JSON_KEY_EXPIRATION_TIME = "expiration_time";
+	/**
+	 * The JSON key for the extra information stored with this token.
+	 */
+	public static final String JSON_KEY_EXTRAS = "extras";
 
 	/**
 	 * The user-name of the user that owns this token.
@@ -66,6 +73,11 @@ public class ExternalAuthorizationToken implements OmhObject {
 	 */
 	@JsonProperty(JSON_KEY_EXPIRATION_TIME)
 	private final long expiration;
+	/**
+	 * Domain-specific fields that should be stored with this token.
+	 */
+	@JsonProperty(JSON_KEY_EXTRAS)
+	private final Map<String, Object> extras;
 	
 	/**
 	 * Creates a new authorization token based on the information from an
@@ -76,15 +88,23 @@ public class ExternalAuthorizationToken implements OmhObject {
 	 *        The user-name of the Open mHealth user whose account is linked to
 	 *        the external party.
 	 * 
+	 * @param domain
+	 *        The domain to which this token applies.
+	 * 
 	 * @param accessToken
 	 *        The token used to make requests to the external party.
 	 * 
 	 * @param refreshToken
 	 *        The token used to generate new access and refresh tokens once
-	 *        these have expired.
+	 *        these have expired, which may be null if this domain does not
+	 *        refresh its tokens.
 	 * 
 	 * @param expiration
-	 *        The time at which this access token expires.
+	 *        The time at which this access token expires. For tokens that do
+	 *        not expire, this can simply be set to {@link Long#MAX_VALUE}.
+	 * 
+	 * @param extras
+	 *        Domain-specific information stored with this token.
 	 * 
 	 * @throws OmhException
 	 *         A parameter was invalid.
@@ -95,7 +115,8 @@ public class ExternalAuthorizationToken implements OmhObject {
 		@JsonProperty(JSON_KEY_DOMAIN) final String domain,
 		@JsonProperty(JSON_KEY_ACCESS_TOKEN) final String accessToken,
 		@JsonProperty(JSON_KEY_REFRESH_TOKEN) final String refreshToken,
-		@JsonProperty(JSON_KEY_EXPIRATION_TIME) final long expiration)
+		@JsonProperty(JSON_KEY_EXPIRATION_TIME) final long expiration,
+		@JsonProperty(JSON_KEY_EXTRAS) final Map<String, Object> extras)
 		throws OmhException {
 
 		if(username == null) {
@@ -107,15 +128,16 @@ public class ExternalAuthorizationToken implements OmhObject {
 		if(accessToken == null) {
 			throw new OmhException("The access token is null.");
 		}
-		if(refreshToken == null) {
-			throw new OmhException("The refresh token is null.");
-		}
 		
 		this.username = username;
 		this.domain = domain;
 		this.accessToken = accessToken;
 		this.refreshToken = refreshToken;
 		this.expiration = expiration;
+		this.extras =
+			(extras == null) ?
+				Collections.<String, Object>emptyMap() :
+				Collections.unmodifiableMap(extras);
 	}
 	
 	/**
@@ -165,6 +187,32 @@ public class ExternalAuthorizationToken implements OmhObject {
 	 */
 	public long getExpiration() {
 		return expiration;
+	}
+	
+	/**
+	 * Returns a domain-specific field.
+	 * 
+	 * @return A domain-specific field.
+	 * 
+	 * @throws OmhException
+	 *         The key is unknown or the value is not the parameterized type.
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> T getExtra(final String key) {
+		Object extra = extras.get(key);
+		if(extra == null) {
+			throw new OmhException("The extra value is unknown: " + key);
+		}
+		
+		try {
+			return (T) extra;
+		}
+		catch(ClassCastException e) {
+			throw
+				new OmhException(
+					"The extra value is not the correct type: " +
+						extra.getClass().toString());
+		}
 	}
 	
 	/**

@@ -1,6 +1,8 @@
 package org.openmhealth.reference.domain;
 
 import java.net.URL;
+import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 
 import org.openmhealth.reference.exception.OmhException;
@@ -24,150 +26,6 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
  */
 @JsonFilter(ExternalAuthorizationInformation.JACKSON_FILTER_GROUP_ID)
 public class ExternalAuthorizationInformation implements OmhObject {
-	/**
-	 * <p>
-	 * The representation of the response from a request token request to an
-	 * OAuth v1 entity.
-	 * </p>
-	 *
-	 * @author John Jenkins
-	 */
-	public static class RequestToken implements OmhObject {
-		/**
-		 * The version of this class used for serialization purposes.
-		 */
-		private static final long serialVersionUID = 1L;
-
-		/**
-		 * The prefix for all OAuth parameters.
-		 */
-		public static final String OAUTH_PREFIX = "oauth_";
-		
-		/**
-		 * The key for the token value.
-		 */
-		public static final String JSON_KEY_TOKEN =
-			OAUTH_PREFIX + "token";
-		/**
-		 * The key for the secret value.
-		 */
-		public static final String JSON_KEY_SECRET =
-			OAUTH_PREFIX + "token_secret";
-		
-		/**
-		 * The token value.
-		 */
-		@JsonProperty(JSON_KEY_TOKEN)
-		private String token;
-		/**
-		 * The corresponding secret.
-		 */
-		@JsonProperty(JSON_KEY_SECRET)
-		private String secret;
-		
-		/**
-		 * The default constructor builds an unverified object. Objects built
-		 * this way should have {@link #verify()} called on them before they
-		 * are used.
-		 */
-		public RequestToken() {
-			// Do nothing.
-		}
-		
-		/**
-		 * Reconstructs an existing request token.
-		 * 
-		 * @param token
-		 *        The token's value.
-		 * 
-		 * @param secret
-		 *        The token's secret.
-		 * 
-		 * @throws OmhException
-		 *         The value or secret are null.
-		 */
-		@JsonCreator
-		public RequestToken(
-			@JsonProperty(JSON_KEY_TOKEN) final String token,
-			@JsonProperty(JSON_KEY_SECRET) final String secret)
-			throws OmhException {
-			
-			if(token == null) {
-				throw new OmhException("The token is null.");
-			}
-			if(secret == null) {
-				throw new OmhException("The secret is null.");
-			}
-			
-			this.token = token;
-			this.secret = secret;
-		}
-		
-		/**
-		 * Returns the token. This may be null if this has not been validated
-		 * yet.
-		 * 
-		 * @return The token, which may be null.
-		 * 
-		 * @see validate()
-		 */
-		public String getToken() {
-			return token;
-		}
-		
-		/**
-		 * Returns the secret associated with this token. This may be null if
-		 * this has not been validated yet.
-		 * 
-		 * @return The secret associated with this token, which may be null.
-		 * 
-		 * @see validate()
-		 */
-		public String getSecret() {
-			return secret;
-		}
-		
-		/**
-		 * Parses the key and value to determine if they need to be saved.
-		 * 
-		 * @param key
-		 *        The key from the response.
-		 * 
-		 * @param value
-		 *        The value associated with the key.
-		 */
-		public void parseParts(final String key, final String value) {
-			// Determine which value this is and store it.
-			if(JSON_KEY_TOKEN.equals(key)) {
-				token = value;
-			}
-			else if(JSON_KEY_SECRET.equals(key)) {
-				secret = value;
-			}
-		}
-		
-		/**
-		 * Verifies that this object is properly built and, if not, throws an
-		 * exception.
-		 * 
-		 * @throws OmhException
-		 *         This object is not properly built.
-		 */
-		public void verify() throws OmhException {
-			if(token == null) {
-				throw
-					new OmhException(
-						"The OAuth provider did not return a request token.");
-			}
-			if(secret == null) {
-				throw
-					new OmhException(
-						"The OAuth provider did not return a request token " +
-							"secret.");
-			}
-		}
-	}
-	
 	/**
 	 * The version of this class used for serialization purposes.
 	 */
@@ -193,6 +51,11 @@ public class ExternalAuthorizationInformation implements OmhObject {
 	 */
 	public static final String JSON_KEY_DOMAIN = "domain";
 	/**
+	 * The JSON key for the state that was generated before the user was
+	 * presented with an authorization request.
+	 */
+	public static final String JSON_KEY_PRE_AUTH_STATE = "pre_auth_state";
+	/**
 	 * The JSON key for the unique identifier.
 	 */
 	public static final String JSON_KEY_AUTHORIZE_ID = "authorize_id";
@@ -201,61 +64,63 @@ public class ExternalAuthorizationInformation implements OmhObject {
 	 */
 	public static final String JSON_KEY_URL = "url";
 	/**
-	 * The JSON key for the Authorization header.
+	 * The JSON key for the custom headers.
 	 */
-	public static final String JSON_KEY_REQUEST_TOKEN = "request_token";
+	public static final String JSON_KEY_HEADERS = "headers";
 	/**
 	 * The JSON key for the creation date.
 	 */
 	public static final String JSON_KEY_CREATION_DATE = "creation_date";
-	/**
-	 * The JSON key for the flag indicating if this request has previously been
-	 * denied.
-	 */
-	public static final String JSON_KEY_PREVIOUSLY_DENIED =
-		"previously_denied";
 	
 	/**
 	 * The Open mHealth user-name of the user.
 	 */
 	@JsonProperty(JSON_KEY_USERNAME)
+	@JacksonFieldFilter(JACKSON_FILTER_GROUP_ID)
 	private final String username;
+	
 	/**
 	 * The domain to which this applies.
 	 * 
 	 * @see ShimRegistry
 	 */
 	@JsonProperty(JSON_KEY_DOMAIN)
+	@JacksonFieldFilter(JACKSON_FILTER_GROUP_ID)
 	private final String domain;
+	
+	/**
+	 * Domain-specific fields that are set in the early stages of the
+	 * authorization flow. Examples of these may be authorization codes that
+	 * will be exchanged later.
+	 */
+	@JsonProperty(JSON_KEY_PRE_AUTH_STATE)
+	@JacksonFieldFilter(JACKSON_FILTER_GROUP_ID)
+	private final Map<String, Object> preAuthState;
+	
 	/**
 	 * The unique identifier for this information.
 	 */
 	@JsonProperty(JSON_KEY_AUTHORIZE_ID)
 	private final String authorizeId;
+	
 	/**
 	 * The URL to use to begin the authorization request.
 	 */
 	@JsonProperty(JSON_KEY_URL)
 	@JsonSerialize(using = ToStringSerializer.class)
 	private final URL url;
+	
 	/**
-	 * The Authorization header that the client should send along with the
-	 * request. This is only used for OAuth v1.
+	 * Additional headers that should be attached to the redirect.
 	 */
-	@JsonProperty(JSON_KEY_REQUEST_TOKEN)
-	@JacksonFieldFilter(JACKSON_FILTER_GROUP_ID)
-	private final RequestToken requestToken;
+	@JsonProperty(JSON_KEY_HEADERS)
+	private final Map<String, String> headers;
+	
 	/**
 	 * The date-time in Unix milliseconds when this object was created.
 	 */
 	@JsonProperty(JSON_KEY_CREATION_DATE)
 	private final long creationDate;
-	/**
-	 * Whether or not a request from this user to the domain has ever been
-	 * attempted and denied before.
-	 */
-	@JsonProperty(JSON_KEY_PREVIOUSLY_DENIED)
-	private final boolean previouslyDenied;
 	
 	/**
 	 * Creates a new set of external authorization information. This should be
@@ -271,13 +136,12 @@ public class ExternalAuthorizationInformation implements OmhObject {
 	 * @param url
 	 *        The URL to which the request should be made for the domain.
 	 * 
-	 * @param requestToken
-	 *        If OAuth v1 is being used, this is the request token that was
-	 *        generated by the provider when the flow was started.
+	 * @param headers
+	 *        Additional headers that should be attached to the redirect.
 	 * 
-	 * @param previouslyDenied
-	 *        Whether or not a similar request has ever been made and the user
-	 *        denied it.
+	 * @param preAuthState
+	 *        Values that may be set before the authorization is presented to
+	 *        the user. These will be retained-server side and never sent.
 	 * 
 	 * @throws OmhException
 	 *         A parameter was invalid.
@@ -286,27 +150,18 @@ public class ExternalAuthorizationInformation implements OmhObject {
 		final String username,
 		final String domain,
 		final URL url,
-		final RequestToken requestToken,
-		final boolean previouslyDenied)
+		final Map<String, String> headers,
+		final Map<String, Object> preAuthState)
 		throws OmhException {
 		
-		if(username == null) {
-			throw new OmhException("The username is null.");
-		}
-		if(domain == null) {
-			throw new OmhException("The domain is null.");
-		}
-		if(url == null) {
-			throw new OmhException("The URL is null.");
-		}
-
-		this.username = username;
-		this.domain = domain;
-		this.authorizeId = UUID.randomUUID().toString();
-		this.url = url;
-		this.requestToken = requestToken;
-		this.creationDate = System.currentTimeMillis();
-		this.previouslyDenied = previouslyDenied;
+		this(
+			username, 
+			domain, 
+			UUID.randomUUID().toString(), 
+			url, 
+			headers, 
+			preAuthState, 
+			System.currentTimeMillis());
 	}
 	
 	/**
@@ -326,16 +181,15 @@ public class ExternalAuthorizationInformation implements OmhObject {
 	 * @param url
 	 *        The URL to which the request should be made for the domain.
 	 * 
-	 * @param requestToken
-	 *        If OAuth v1 is being used, this is the request token that was
-	 *        generated by the provider when the flow was started.
+	 * @param headers
+	 *        Additional headers that should be attached to the redirect.
+	 * 
+	 * @param preAuthState
+	 *        Values that may be set before the authorization is presented to
+	 *        the user. These will be retained-server side and never sent.
 	 * 
 	 * @param creationDate
 	 *        The time-stamp of when this information was generated.
-	 * 
-	 * @param previouslyDenied
-	 *        Whether or not a similar request has ever been made and the user
-	 *        denied it.
 	 * 
 	 * @throws OmhException
 	 *         A parameter was invalid.
@@ -346,10 +200,10 @@ public class ExternalAuthorizationInformation implements OmhObject {
 		@JsonProperty(JSON_KEY_DOMAIN) final String domain,
 		@JsonProperty(JSON_KEY_AUTHORIZE_ID) final String authorizeId,
 		@JsonProperty(JSON_KEY_URL) final URL url,
-		@JsonProperty(JSON_KEY_REQUEST_TOKEN) final RequestToken requestToken,
-		@JsonProperty(JSON_KEY_CREATION_DATE) final long creationDate,
-		@JsonProperty(JSON_KEY_PREVIOUSLY_DENIED)
-			final boolean previouslyDenied)
+		@JsonProperty(JSON_KEY_HEADERS) final Map<String, String> headers,
+		@JsonProperty(JSON_KEY_PRE_AUTH_STATE)
+			final Map<String, Object> preAuthState,
+		@JsonProperty(JSON_KEY_CREATION_DATE) final long creationDate)
 		throws OmhException {
 		
 		if(username == null) {
@@ -369,9 +223,15 @@ public class ExternalAuthorizationInformation implements OmhObject {
 		this.domain = domain;
 		this.authorizeId = authorizeId;
 		this.url = url;
-		this.requestToken = requestToken;
+		this.headers =
+			(headers == null) ?
+				Collections.<String, String>emptyMap() :
+				Collections.unmodifiableMap(headers);
+		this.preAuthState =
+			(preAuthState == null) ?
+				Collections.<String, Object>emptyMap() :
+				Collections.unmodifiableMap(preAuthState);
 		this.creationDate = creationDate;
-		this.previouslyDenied = previouslyDenied;
 	}
 	
 	/**
@@ -415,8 +275,19 @@ public class ExternalAuthorizationInformation implements OmhObject {
 	 * 
 	 * @return The request token, which may be null.
 	 */
-	public RequestToken getRequestToken() {
-		return requestToken;
+	public Map<String, String> getHeaders() {
+		return headers;
+	}
+	
+	/**
+	 * Returns the state generated by the authorization flow before the user
+	 * was presented with an authorization request.
+	 * 
+	 * @return The state generated by the authorization flow before the user
+	 *         was presented with an authorization request.
+	 */
+	public Map<String, Object> getPreAuthState() {
+		return preAuthState;
 	}
 	
 	/**
@@ -428,14 +299,5 @@ public class ExternalAuthorizationInformation implements OmhObject {
 	 */
 	public long getCreationDate() {
 		return creationDate;
-	}
-	
-	/**
-	 * Returns whether or not the user previously denied this request.
-	 * 
-	 * @return Whether or not the user previously denied this request.
-	 */
-	public boolean wasPreviouslyDenied() {
-		return previouslyDenied;
 	}
 }

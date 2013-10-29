@@ -1,6 +1,5 @@
 package org.openmhealth.shim;
 
-import java.net.URL;
 import java.util.List;
 
 import org.joda.time.DateTime;
@@ -9,6 +8,7 @@ import org.openmhealth.reference.domain.ColumnList;
 import org.openmhealth.reference.domain.Data;
 import org.openmhealth.reference.domain.ExternalAuthorizationToken;
 import org.openmhealth.reference.domain.Schema;
+import org.openmhealth.shim.authorization.ShimAuthorization;
 import org.openmhealth.shim.exception.ShimDataException;
 import org.openmhealth.shim.exception.ShimSchemaException;
 
@@ -23,24 +23,6 @@ import org.openmhealth.shim.exception.ShimSchemaException;
  */
 public interface Shim {
 	/**
-	 * <p>
-	 * The allowed authorization methods.
-	 * </p>
-	 *
-	 * @author John Jenkins
-	 */
-	public static enum AuthorizationMethod {
-		/**
-		 * The value for OAuth version 1.
-		 */
-		OAUTH_1,
-		/**
-		 * The value for OAuth version 2.
-		 */
-		OAUTH_2;
-	}
-	
-	/**
 	 * The domain that this shim can handle. This should correspond directly to
 	 * the types of schema IDs it should expect. For example, a shim to the
 	 * FitBit domain should return "<tt>fitbit</tt>" and should expect schema
@@ -51,62 +33,11 @@ public interface Shim {
 	public String getDomain();
 	
 	/**
-	 * Returns the authorization method used by this shim.
+	 * Returns the authorization implementation used by this shim.
 	 * 
-	 * @return The authorization method used by this shim.
+	 * @return The authorization implementation used by this shim.
 	 */
-	public AuthorizationMethod getAuthorizationMethod();
-	
-	/**
-	 * <p>
-	 * Returns the OAuth version 1 URL for obtaining an unauthorized request
-	 * token.
-	 * </p>
-	 * 
-	 * <p>
-	 * This is for OAuth version 1 only.
-	 * </p>
-	 * 
-	 * @return The OAuth version 1 URL for obtaining an unauthorized request
-	 *         token.
-	 */
-	public URL getRequestTokenUrl();
-	
-	/**
-	 * <p> For OAuth version 1, this returns the URL to redirect the user to
-	 * authorize the unauthorized request token.
-	 * </p>
-	 * 
-	 * <p>
-	 * For OAuth version 2, this returns the URL to redirect the user to begin
-	 * the authorization flow.
-	 * </p>
-	 * 
-	 * @return The URL to the OAuth authorize end-point.
-	 */
-	public URL getAuthorizeUrl();
-	
-	/**
-	 * Returns the OAuth URL where an OAuth version 1 request token or OAuth
-	 * version 2 access code can be exchanged for an access token.
-	 *  
-	 * @return The URL to the OAuth token end-point.
-	 */
-	public URL getTokenUrl();
-	
-	/**
-	 * Returns the shim's OAuth client ID for Open mHealth.
-	 * 
-	 * @return The shim's OAuth client ID for Open mHealth.
-	 */
-	public String getClientId();
-	
-	/**
-	 * Returns the shim's OAuth client secret for Open mHealth.
-	 * 
-	 * @return The shim's OAuth client secret for Open mHealth.
-	 */
-	public String getClientSecret();
+	public ShimAuthorization getAuthorizationImplementation();
 	
 	/**
 	 * Returns the list of schema IDs that can be handled by this shim. All

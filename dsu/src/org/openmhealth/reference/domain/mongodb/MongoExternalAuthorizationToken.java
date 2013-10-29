@@ -1,5 +1,7 @@
 package org.openmhealth.reference.domain.mongodb;
 
+import java.util.Map;
+
 import org.mongojack.MongoCollection;
 import org.mongojack.ObjectId;
 import org.openmhealth.reference.data.ExternalAuthorizationTokenBin;
@@ -51,6 +53,9 @@ public class MongoExternalAuthorizationToken
 	 * @param expiration
 	 *        The time at which this access token expires.
 	 * 
+	 * @param extras
+	 *        Domain-specific information stored with this token.
+	 * 
 	 * @throws OmhException
 	 *         A parameter was invalid.
 	 */
@@ -61,10 +66,11 @@ public class MongoExternalAuthorizationToken
 		@JsonProperty(JSON_KEY_DOMAIN) final String domain,
 		@JsonProperty(JSON_KEY_ACCESS_TOKEN) final String accessToken,
 		@JsonProperty(JSON_KEY_REFRESH_TOKEN) final String refreshToken,
-		@JsonProperty(JSON_KEY_EXPIRATION_TIME) final long expiration)
+		@JsonProperty(JSON_KEY_EXPIRATION_TIME) final long expiration,
+		@JsonProperty(JSON_KEY_EXTRAS) final Map<String, Object> extras)
 		throws OmhException {
 
-		super(username, domain, accessToken, refreshToken, expiration);
+		super(username, domain, accessToken, refreshToken, expiration, extras);
 		
 		// Store the MongoDB ID.
 		if(dbId == null) {
