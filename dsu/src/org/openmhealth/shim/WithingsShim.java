@@ -81,11 +81,11 @@ public class WithingsShim implements Shim {
     }
 
 	public String getClientId() {
-        return "bfb8c6b3bffd8b83b39e67dfe40f81c8289b8d0bbfb97b27953925d6f3bc";
+        return ShimUtil.getShimProperty(DOMAIN, "clientId");
     }
 
 	public String getClientSecret() {
-        return "d9182878bc9999158cd748fc2fe12d81ffcce9c9f77093972e93c0f";
+        return ShimUtil.getShimProperty(DOMAIN, "clientSecret");
     }
 
 	public List<String> getSchemaIds() {

@@ -1,8 +1,10 @@
 package org.openmhealth.shim;
 
 import java.io.InputStream;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Properties;
 
 import name.jenkins.paul.john.concordia.Concordia;
 
@@ -125,5 +127,37 @@ public class ShimUtil {
         }
                 
         return new Schema(id, 1, concordia);
+    }
+
+    /**
+     * Retrieves a shim config value from the associated properties file. For a
+     * shim with the domain 'fitbit', the properties file should be located on
+     * the classpath at 'config/fitbit.properties'.
+     *
+     * @param domain
+     *        The shim's domain.
+     *
+     * @param key
+     *        The key of the config value.
+     *
+     * @return The config value or null if it was not found.
+     */
+    public static String getShimProperty(
+        final String domain,
+        final String key) {
+        String propertiesResourcePath = "/config/" + domain + ".properties";
+        InputStream propertiesStream =
+            ShimUtil.class.getClassLoader()
+                .getResourceAsStream(propertiesResourcePath);
+
+        Properties properties = new Properties();
+        try {
+            properties.load(propertiesStream);
+        }
+        catch(IOException e) {
+            return null;
+        }
+
+        return properties.getProperty(key);
     }
 }
