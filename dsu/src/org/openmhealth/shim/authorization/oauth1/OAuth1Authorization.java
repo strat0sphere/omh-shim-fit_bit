@@ -283,7 +283,7 @@ public abstract class OAuth1Authorization implements ShimAuthorization {
 				domain,
 				authorizeUrl,
 				null,
-				null);
+				preAuthState);
 	}
 	
 	/*
