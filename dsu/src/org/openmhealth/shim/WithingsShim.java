@@ -19,6 +19,7 @@ import org.openmhealth.reference.domain.Data;
 import org.openmhealth.reference.domain.ExternalAuthorizationToken;
 import org.openmhealth.reference.domain.MetaData;
 import org.openmhealth.reference.domain.Schema;
+import org.openmhealth.shim.authorization.ShimAuthorization;
 import org.openmhealth.shim.exception.ShimDataException;
 import org.openmhealth.shim.exception.ShimSchemaException;
 
@@ -64,10 +65,6 @@ public class WithingsShim implements Shim {
         return DOMAIN;
     }
 
-    public AuthorizationMethod getAuthorizationMethod() {
-        return AuthorizationMethod.OAUTH_1;
-    }
-
     public URL getRequestTokenUrl() {
         return null;
     }
@@ -86,6 +83,10 @@ public class WithingsShim implements Shim {
 
 	public String getClientSecret() {
         return ShimUtil.getShimProperty(DOMAIN, "clientSecret");
+    }
+
+	public ShimAuthorization getAuthorizationImplementation() {
+        return new FitbitShimAuthorization();
     }
 
 	public List<String> getSchemaIds() {
@@ -133,8 +134,8 @@ public class WithingsShim implements Shim {
         OAuthConsumer consumer = 
             new DefaultOAuthConsumer(getClientId(), getClientSecret());
         consumer.setSigningStrategy(new QueryStringSigningStrategy());
-        consumer.setTokenWithSecret(
-            token.getAccessToken(), token.getAccessTokenSecret());
+        //consumer.setTokenWithSecret(
+            //token.getAccessToken(), token.getAccessTokenSecret());
 
         // Build and sign the request URL.
         StringBuilder dateParams = new StringBuilder();

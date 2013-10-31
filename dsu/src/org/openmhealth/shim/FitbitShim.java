@@ -22,6 +22,7 @@ import org.openmhealth.reference.domain.Data;
 import org.openmhealth.reference.domain.ExternalAuthorizationToken;
 import org.openmhealth.reference.domain.MetaData;
 import org.openmhealth.reference.domain.Schema;
+import org.openmhealth.shim.authorization.ShimAuthorization;
 import org.openmhealth.shim.exception.ShimDataException;
 import org.openmhealth.shim.exception.ShimSchemaException;
 
@@ -45,10 +46,12 @@ import com.fitbit.api.model.APIResourceCredentials;
 import com.fitbit.api.model.FitbitUser;
 
 public class FitbitShim implements Shim {
+    private static final String DOMAIN = "fitbit";
+
     /**
      * The prefix for all schemas used in this shim.
      */
-    private static final String SCHEMA_PREFIX = "omh:fitbit:";
+    private static final String SCHEMA_PREFIX = "omh:" + DOMAIN + ":";
 
     private FitbitAPIEntityCache entityCache =
         new FitbitApiEntityCacheMapImpl();
@@ -111,32 +114,24 @@ public class FitbitShim implements Shim {
                  subscriptionStore);
     }
 
+    public FitbitAPIClientService<FitbitApiClientAgent> getApiClientService() {
+        return apiClientService;
+    }
+
     public String getDomain() {
-        return "fitbit";
-    }
-
-    public AuthorizationMethod getAuthorizationMethod() {
-        return AuthorizationMethod.OAUTH_1;
-    }
-
-    public URL getRequestTokenUrl() {
-        return buildURL("http://api.fitbit.com/oauth/request_token");
-    }
-
-	public URL getAuthorizeUrl() {
-        return buildURL("http://www.fitbit.com/oauth/authorize");
-    }
-
-	public URL getTokenUrl() {
-        return buildURL("http://api.fitbit.com/oauth/access_token");
+        return DOMAIN;
     }
 
 	public String getClientId() {
-        return "6fa6c4f6e957429bb32bea2e4f5b59f4";
+        return ShimUtil.getShimProperty(DOMAIN, "clientId");
     }
 
 	public String getClientSecret() {
-        return "cae324dc35044c71ada7b4e43c1d1fb1";
+        return ShimUtil.getShimProperty(DOMAIN, "clientSecret");
+    }
+
+	public ShimAuthorization getAuthorizationImplementation() {
+        return new FitbitShimAuthorization();
     }
 
 	public List<String> getSchemaIds() {
@@ -187,13 +182,13 @@ public class FitbitShim implements Shim {
         APIResourceCredentials credentials =
             new APIResourceCredentials(token.getUsername(), null, null);
         credentials.setAccessToken(token.getAccessToken());
-        credentials.setAccessTokenSecret(token.getAccessTokenSecret());
+        //credentials.setAccessTokenSecret(token.getAccessTokenSecret());
         credentialsCache.saveResourceCredentials(localUserDetail, credentials);
 
         // Extract the data type and find the associated DataFetcher.
-        String dataType = dataTypeFromSchemaId(schemaId);
+        String dataType = null;
         try {
-            dataType = dataTypeFromSchemaId(schemaId);
+            dataType = ShimUtil.dataTypeFromSchemaId(schemaId);
         }
         catch(ShimSchemaException e) {
             throw new ShimDataException("Invalid schema id: " + schemaId, e);
@@ -280,40 +275,5 @@ public class FitbitShim implements Shim {
         data.put("time_in_bed", summary.getTotalTimeInBed());
 
         return data;
-    }
-
-    /**
-     * Given a schema ID, returns the data type. For example, given
-     * 'omh:fitbit:activity', will return 'activity'.
-     */
-    private static String dataTypeFromSchemaId(String id)
-        throws ShimSchemaException {
-        if (id == null) {
-            throw new ShimSchemaException("id is null");
-        }
-
-        String[] parts = id.split(":");
-
-        if (parts.length != 3) {
-            throw new ShimSchemaException("Invalid schema id: " + id);
-        }
-
-        return parts[2];
-    }
-
-    /**
-     * Creates a URL from a String.
-     */
-    private static URL buildURL(String urlStr) {
-        URL url = null;
-
-        try {
-            url = new URL(urlStr);
-        }
-        catch(MalformedURLException e) {
-            // Ignore the exception since all URLs are hardcoded.
-        }
-
-        return url;
     }
 }

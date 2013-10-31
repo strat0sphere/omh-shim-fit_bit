@@ -108,7 +108,7 @@ public class ExternalAuthorizationInformation implements OmhObject {
 	 */
 	@JsonProperty(JSON_KEY_URL)
 	@JsonSerialize(using = ToStringSerializer.class)
-	private final URL url;
+	private URL url;
 	
 	/**
 	 * Additional headers that should be attached to the redirect.
@@ -215,9 +215,6 @@ public class ExternalAuthorizationInformation implements OmhObject {
 		if(authorizeId == null) {
 			throw new OmhException("The authorize ID is null.");
 		}
-		if(url == null) {
-			throw new OmhException("The URL is null.");
-		}
 		
 		this.username = username;
 		this.domain = domain;
@@ -269,6 +266,10 @@ public class ExternalAuthorizationInformation implements OmhObject {
 	public URL getUrl() {
 		return url;
 	}
+
+    public void setUrl(URL url) {
+        this.url = url;
+    }
 	
 	/**
 	 * Returns the request token, however it may be null.
