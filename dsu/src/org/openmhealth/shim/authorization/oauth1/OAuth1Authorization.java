@@ -32,7 +32,6 @@ import org.openmhealth.reference.domain.ExternalAuthorizationToken;
 import org.openmhealth.reference.domain.OmhObject;
 import org.openmhealth.reference.exception.OmhException;
 import org.openmhealth.reference.request.AuthorizeDomainRequest;
-import org.openmhealth.reference.servlet.Version1;
 import org.openmhealth.shim.Shim;
 import org.openmhealth.shim.authorization.ShimAuthorization;
 
@@ -249,7 +248,9 @@ public abstract class OAuth1Authorization implements ShimAuthorization {
 		
 		// Get the request token.
 		RequestToken requestToken =
-			getRequestToken(shim, Version1.buildRootUrl(httpRequest));
+			getRequestToken(
+				shim,
+				AuthorizeDomainRequest.buildUrl(httpRequest));
 		
 		// Build the authorize URL with the required parameters.
 		try {

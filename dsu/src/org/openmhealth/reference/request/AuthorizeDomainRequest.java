@@ -9,6 +9,7 @@ import org.openmhealth.reference.data.ExternalAuthorizationTokenBin;
 import org.openmhealth.reference.domain.ExternalAuthorizationInformation;
 import org.openmhealth.reference.domain.ExternalAuthorizationToken;
 import org.openmhealth.reference.exception.OmhException;
+import org.openmhealth.reference.servlet.Version1;
 import org.openmhealth.shim.Shim;
 import org.openmhealth.shim.ShimRegistry;
 
@@ -216,5 +217,17 @@ public class AuthorizeDomainRequest extends Request<URL> {
 		
 		// Redirect the user.
         setData(state.clientUrl);
+	}
+	
+	/**
+	 * Builds a URL for this request based on the incoming request.
+	 * 
+	 * @param httpRequest
+	 *        The incoming HTTP request.
+	 * 
+	 * @return A String representing the URL for this request.
+	 */
+	public static String buildUrl(final HttpServletRequest httpRequest) {
+		return Version1.buildRootUrl(httpRequest) + Version1.PATH + PATH;
 	}
 }
