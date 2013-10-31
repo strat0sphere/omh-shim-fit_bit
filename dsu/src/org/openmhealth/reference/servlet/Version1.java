@@ -1135,7 +1135,7 @@ public class Version1 {
 	 */
 	@RequestMapping(
 		value = AuthorizeDomainRequest.PATH,
-		method = RequestMethod.POST)
+		method = { RequestMethod.GET, RequestMethod.POST })
 	public URL authorizeDomain(
 		@RequestParam(
 			value = "state",
