@@ -2,6 +2,7 @@ package org.openmhealth.shim;
 
 import java.io.InputStream;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Properties;
@@ -9,6 +10,7 @@ import java.util.Properties;
 import name.jenkins.paul.john.concordia.Concordia;
 
 import org.openmhealth.reference.domain.Schema;
+import org.openmhealth.reference.exception.OmhException;
 import org.openmhealth.shim.exception.ShimSchemaException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,27 +59,6 @@ public class ShimUtil {
     public static String domainFromSchemaId(String id)
         throws ShimSchemaException {
         return splitSchemaId(id)[1];
-    }
-
-    /**
-     * Creates a URL from a String.
-     *
-     * @param urlStr
-     *        The URL as a string.
-     *
-     * @return The URL as a URL object.
-     */
-    public static URL buildURL(String urlStr) {
-        URL url = null;
-
-        try {
-            url = new URL(urlStr);
-        }
-        catch(MalformedURLException e) {
-            // Ignore the exception since all URLs are hardcoded.
-        }
-
-        return url;
     }
 
     /**
@@ -171,5 +152,33 @@ public class ShimUtil {
         }
 
         return value;
+    }
+
+    /**
+     * Fetches a URL.
+     *
+     * @param url
+     *        The URL to fetch.
+     *
+     * @return An InputStream with the contents.
+     */
+    public static InputStream fetchUrl(URL url) {
+        InputStream inputStream = null;
+        try {
+            HttpURLConnection request = (HttpURLConnection)url.openConnection();
+            request.connect();
+
+            if (request.getResponseCode() != 200) {
+                throw new OmhException(
+                    "HTTP error code: " + request.getResponseCode());
+            }
+
+            inputStream = request.getInputStream();
+        }
+        catch(IOException e) {
+            throw new OmhException("HTTP request error", e);
+        }
+
+        return inputStream;
     }
 }

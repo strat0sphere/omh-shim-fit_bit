@@ -19,19 +19,21 @@ import org.openmhealth.reference.domain.Data;
 import org.openmhealth.reference.domain.ExternalAuthorizationToken;
 import org.openmhealth.reference.domain.MetaData;
 import org.openmhealth.reference.domain.Schema;
+import org.openmhealth.shim.authorization.ShimAuthorization;
+import org.openmhealth.shim.authorization.oauth1.OAuth1Authorization;
 import org.openmhealth.shim.exception.ShimDataException;
 import org.openmhealth.shim.exception.ShimSchemaException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import oauth.signpost.OAuth;
 import oauth.signpost.OAuthConsumer;
 import oauth.signpost.basic.DefaultOAuthConsumer;
 import oauth.signpost.basic.UrlStringRequestAdapter;
 import oauth.signpost.exception.OAuthCommunicationException;
 import oauth.signpost.exception.OAuthExpectationFailedException;
 import oauth.signpost.exception.OAuthMessageSignerException;
+import oauth.signpost.http.HttpParameters;
 import oauth.signpost.signature.QueryStringSigningStrategy;
 
 public class WithingsShim implements Shim {
@@ -64,28 +66,8 @@ public class WithingsShim implements Shim {
         return DOMAIN;
     }
 
-    public AuthorizationMethod getAuthorizationMethod() {
-        return AuthorizationMethod.OAUTH_1;
-    }
-
-    public URL getRequestTokenUrl() {
-        return null;
-    }
-
-	public URL getAuthorizeUrl() {
-        return null;
-    }
-
-	public URL getTokenUrl() {
-        return null;
-    }
-
-	public String getClientId() {
-        return ShimUtil.getShimProperty(DOMAIN, "clientId");
-    }
-
-	public String getClientSecret() {
-        return ShimUtil.getShimProperty(DOMAIN, "clientSecret");
+	public ShimAuthorization getAuthorizationImplementation() {
+        return new WithingsShimAuthorization();
     }
 
 	public List<String> getSchemaIds() {
@@ -129,14 +111,7 @@ public class WithingsShim implements Shim {
             return null;
         }
 
-        // Build the oauth consumer used for signing requests.
-        OAuthConsumer consumer = 
-            new DefaultOAuthConsumer(getClientId(), getClientSecret());
-        consumer.setSigningStrategy(new QueryStringSigningStrategy());
-        consumer.setTokenWithSecret(
-            token.getAccessToken(), token.getAccessTokenSecret());
-
-        // Build and sign the request URL.
+        // Build request URL.
         StringBuilder dateParams = new StringBuilder();
         if (startDate != null) {
             dateParams.append("&startdate=" + startDate.getMillis() / 1000);
@@ -145,45 +120,25 @@ public class WithingsShim implements Shim {
             dateParams.append("&enddate=" + endDate.getMillis() / 1000);
         }
 
-        URL url = null;
-        try {
-            UrlStringRequestAdapter adapter = 
-                new UrlStringRequestAdapter(
-                    "http://wbsapi.withings.net/measure"
-                    + "?action=getmeas"
-                    + "&devtype=1"
-                    + dateParams.toString()
-                    + "&userid=2406179");
-
-            consumer.sign(adapter);
-
-            url = new URL(adapter.getRequestUrl());
-        }
-        catch(MalformedURLException
-              | OAuthExpectationFailedException
-              | OAuthCommunicationException
-              | OAuthMessageSignerException
-              e) {
-            throw new ShimDataException("Error constructing URL", e);
-        }
+        URL url = 
+            buildSignedUrl(
+                "http://wbsapi.withings.net/measure"
+                + "?action=getmeas"
+                + "&devtype=1"
+                + dateParams.toString()
+                + "&userid=" 
+                + token.getExtra(WithingsShimAuthorization.KEY_EXTRAS_USERID),
+                token,
+                null);
 
         // Fetch and decode the JSON data.
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode jsonData = null;
         try {
-            HttpURLConnection request = (HttpURLConnection)url.openConnection();
-            request.connect();
-
-            if (request.getResponseCode() != 200) {
-                throw new ShimDataException(
-                    "Withings HTTP error code: " 
-                    + request.getResponseCode());
-            }
-
-            jsonData = objectMapper.readTree(request.getInputStream());
+            jsonData = objectMapper.readTree(ShimUtil.fetchUrl(url));
         }
         catch(IOException e) {
-            throw new ShimDataException("Withings API request error", e);
+            throw new ShimDataException("JSON decoding error", e);
         }
 
         // Make sure there's no error status.
@@ -276,5 +231,99 @@ public class WithingsShim implements Shim {
         }
 
         return outputData;
+    }
+
+    /**
+     * Signs a URL.
+     *
+     * @param unsignedUrl
+     *        The URL to be signed.
+     *
+     * @param token
+     *        The token. Can be null.
+     *
+     * @param secret
+     *        The secret. Can be null.
+     *
+     * @param parameters
+     *        Additional parameters for the URL.
+     *
+     * @return A signed URL.
+     */
+    public URL buildSignedUrl(
+        String unsignedUrl, 
+        String token, 
+        String secret, 
+        Map<String, String> parameters) {
+        // Build the oauth consumer used for signing requests.
+        OAuthConsumer consumer = createOAuthConsumer();
+        if (token != null && secret != null) {
+            consumer.setTokenWithSecret(token, secret);
+        }
+
+        if (parameters != null) {
+            HttpParameters additionalParameters = new HttpParameters();
+            for (String key : parameters.keySet()) {
+                additionalParameters.put(key, parameters.get(key));
+            }
+            consumer.setAdditionalParameters(additionalParameters);
+        }
+
+        URL url = null;
+        try {
+            UrlStringRequestAdapter adapter = 
+                new UrlStringRequestAdapter(unsignedUrl);
+
+            consumer.sign(adapter);
+
+            url = new URL(adapter.getRequestUrl());
+        }
+        catch(MalformedURLException
+              | OAuthExpectationFailedException
+              | OAuthCommunicationException
+              | OAuthMessageSignerException
+              e) {
+            throw new ShimDataException("Error signing URL", e);
+        }
+
+        return url;
+    }
+
+    /**
+     * Signs a URL.
+     *
+     * @param unsignedUrl
+     *        The URL to be signed.
+     *
+     * @param token
+     *        The token.
+     *
+     * @param parameters
+     *        Additional parameters for the URL.
+     *
+     * @return A signed URL.
+     */
+    public URL buildSignedUrl(
+        String unsignedUrl, ExternalAuthorizationToken token,
+        Map<String, String> parameters) {
+        return buildSignedUrl(
+            unsignedUrl,
+            token.getAccessToken(), 
+            token.<String>getExtra(OAuth1Authorization.KEY_EXTRAS_SECRET),
+            parameters);
+    }
+
+    /**
+     * Creates an oauth consumer used for signing request URLs.
+     *
+     * @return The OAuthConsumer.
+     */
+    private OAuthConsumer createOAuthConsumer() {
+        OAuthConsumer consumer =
+            new DefaultOAuthConsumer(
+                ShimUtil.getShimProperty(DOMAIN, "clientId"),
+                ShimUtil.getShimProperty(DOMAIN, "clientSecret"));
+        consumer.setSigningStrategy(new QueryStringSigningStrategy());
+        return consumer;
     }
 }
