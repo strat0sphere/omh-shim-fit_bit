@@ -2,10 +2,13 @@ package org.openmhealth.reference.data.mongodb;
 
 import org.mongojack.DBCursor;
 import org.mongojack.JacksonDBCollection;
+import org.mongojack.internal.MongoJackModule;
 import org.openmhealth.reference.data.ExternalAuthorizationInformationBin;
 import org.openmhealth.reference.domain.ExternalAuthorizationInformation;
 import org.openmhealth.reference.exception.OmhException;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.MongoException.DuplicateKey;
@@ -21,6 +24,25 @@ import com.mongodb.QueryBuilder;
  */
 public class MongoExternalAuthorizationInformationBin
 	extends ExternalAuthorizationInformationBin {
+	
+	/**
+	 * The object mapper that should be used to parse
+	 * {@link ExternalAuthorizationInformation} objects.
+	 */
+	private static final ObjectMapper JSON_MAPPER;
+	static {
+		// Create the object mapper.
+		ObjectMapper mapper = new ObjectMapper();
+		
+		// Create the FilterProvider.
+		SimpleFilterProvider filterProvider = new SimpleFilterProvider();
+		filterProvider.setFailOnUnknownId(false);
+		mapper.setFilters(filterProvider);
+		
+		// Finally, we must configure the mapper to work with the MongoJack
+		// configuration.
+		JSON_MAPPER = MongoJackModule.configure(mapper);
+	}	
 	
 	/**
 	 * Default constructor.
@@ -82,7 +104,9 @@ public class MongoExternalAuthorizationInformationBin
 						.getInstance()
 						.getDb()
 						.getCollection(DB_NAME),
-					ExternalAuthorizationInformation.class);
+					ExternalAuthorizationInformation.class,
+					Object.class,
+					JSON_MAPPER);
 		
 		// Add the token.
 		try {
@@ -122,7 +146,9 @@ public class MongoExternalAuthorizationInformationBin
 						.getInstance()
 						.getDb()
 						.getCollection(DB_NAME),
-					ExternalAuthorizationInformation.class);
+					ExternalAuthorizationInformation.class,
+					Object.class,
+					JSON_MAPPER);
 		
 		// Build the query.
 		QueryBuilder queryBuilder = QueryBuilder.start();
@@ -164,7 +190,9 @@ public class MongoExternalAuthorizationInformationBin
 						.getInstance()
 						.getDb()
 						.getCollection(DB_NAME),
-					ExternalAuthorizationInformation.class);
+					ExternalAuthorizationInformation.class,
+					Object.class,
+					JSON_MAPPER);
 		
 		// Perform the query.
 		DBCursor<ExternalAuthorizationInformation> result =
