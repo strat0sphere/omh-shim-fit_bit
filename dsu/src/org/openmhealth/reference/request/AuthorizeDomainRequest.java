@@ -1,5 +1,6 @@
 package org.openmhealth.reference.request;
 
+import java.io.IOException;
 import java.net.URL;
 
 import javax.servlet.http.HttpServletRequest;
@@ -16,6 +17,9 @@ import org.openmhealth.shim.ShimRegistry;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * <p>
@@ -158,7 +162,7 @@ public class AuthorizeDomainRequest extends Request<URL> {
 	 */
 	public AuthorizeDomainRequest(
 		final HttpServletRequest httpRequest,
-		final State state)
+		final String state)
 		throws OmhException {
 		
 		// Validate the code.
@@ -174,7 +178,19 @@ public class AuthorizeDomainRequest extends Request<URL> {
 			throw new OmhException("The state is null.");
 		}
 		else {
-			this.state = state;
+			try {
+				this.state =
+					(new ObjectMapper()).readValue(state, State.class);
+			}
+			catch(JsonParseException e) {
+				throw new OmhException("The state was not valid JSON.", e);
+			}
+			catch(JsonMappingException e) {
+				throw new OmhException("The state was invalid.", e);
+			}
+			catch(IOException e) {
+				throw new OmhException("Could not read the state.", e);
+			}
 		}
 	}
 

@@ -61,7 +61,6 @@ import org.openmhealth.reference.exception.OmhException;
 import org.openmhealth.reference.filter.AuthFilter;
 import org.openmhealth.reference.request.AuthenticationRequest;
 import org.openmhealth.reference.request.AuthorizeDomainRequest;
-import org.openmhealth.reference.request.AuthorizeDomainRequest.State;
 import org.openmhealth.reference.request.DataReadRequest;
 import org.openmhealth.reference.request.DataWriteRequest;
 import org.openmhealth.reference.request.ListRequest;
@@ -1140,7 +1139,7 @@ public class Version1 {
 		@RequestParam(
 			value = "state",
 			required = true)
-			final State state,
+			final String state,
 		final HttpServletRequest request,
 		final HttpServletResponse response) {
 		
