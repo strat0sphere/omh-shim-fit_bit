@@ -5,6 +5,7 @@ import org.mongojack.JacksonDBCollection;
 import org.mongojack.internal.MongoJackModule;
 import org.openmhealth.reference.data.ExternalAuthorizationInformationBin;
 import org.openmhealth.reference.domain.ExternalAuthorizationInformation;
+import org.openmhealth.reference.domain.mongodb.MongoExternalAuthorizationInformation;
 import org.openmhealth.reference.exception.OmhException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -139,14 +140,14 @@ public class MongoExternalAuthorizationInformationBin
 		}
 		
 		// Get the external authorization information collection.
-		JacksonDBCollection<ExternalAuthorizationInformation, Object> collection =
+		JacksonDBCollection<MongoExternalAuthorizationInformation, Object> collection =
 			JacksonDBCollection
 				.wrap(
 					MongoDao
 						.getInstance()
 						.getDb()
 						.getCollection(DB_NAME),
-					ExternalAuthorizationInformation.class,
+					MongoExternalAuthorizationInformation.class,
 					Object.class,
 					JSON_MAPPER);
 		
@@ -183,19 +184,19 @@ public class MongoExternalAuthorizationInformationBin
 		}
 		
 		// Get the external authorization information collection.
-		JacksonDBCollection<ExternalAuthorizationInformation, Object> collection =
+		JacksonDBCollection<MongoExternalAuthorizationInformation, Object> collection =
 			JacksonDBCollection
 				.wrap(
 					MongoDao
 						.getInstance()
 						.getDb()
 						.getCollection(DB_NAME),
-					ExternalAuthorizationInformation.class,
+					MongoExternalAuthorizationInformation.class,
 					Object.class,
 					JSON_MAPPER);
 		
 		// Perform the query.
-		DBCursor<ExternalAuthorizationInformation> result =
+		DBCursor<MongoExternalAuthorizationInformation> result =
 			collection
 				.find(
 					new BasicDBObject(
