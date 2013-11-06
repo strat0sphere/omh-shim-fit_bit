@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -22,7 +24,7 @@ public class ShimUtil {
     /**
      * Splits a schema ID into an array of strings.
      */
-    private static String[] splitSchemaId(String id) {
+    private static String[] splitSchemaId(final String id) {
         if (id == null) {
             throw new ShimSchemaException("id is null");
         }
@@ -45,7 +47,7 @@ public class ShimUtil {
      *
      * @return The data type.
      */
-    public static String dataTypeFromSchemaId(String id)
+    public static String dataTypeFromSchemaId(final String id)
         throws ShimSchemaException {
         return splitSchemaId(id)[2];
     }
@@ -59,7 +61,7 @@ public class ShimUtil {
      *
      * @return The domain.
      */
-    public static String domainFromSchemaId(String id)
+    public static String domainFromSchemaId(final String id)
         throws ShimSchemaException {
         return splitSchemaId(id)[1];
     }
@@ -109,7 +111,55 @@ public class ShimUtil {
             throw new ShimSchemaException("Error reading schema.", e);
         }
                 
-        return new Schema(id, 1, concordia);
+        return new Schema(id, version.longValue(), concordia);
+    }
+
+    /**
+     * Builds a Schema for a data type that only returns a single numeric value.
+     *
+     * @param id
+     *        The schema ID.
+     *
+     * @param version
+     *        The schema version.
+     *
+     * @param description
+     *        The description.
+     *
+     * @return The Schema.
+     */
+    public static Schema buildSchemaForSingleValue(
+        final String id,
+        final Long version,
+        final String description) 
+        throws ShimSchemaException {
+        String dataType = null;
+        try {
+            dataType = ShimUtil.dataTypeFromSchemaId(id);
+        }
+        catch(ShimSchemaException e) {
+            throw new ShimSchemaException("Invalid schema id: " + id, e);
+        }
+
+        Map <String, Object> field = new HashMap<String, Object>();
+        field.put("type", "number");
+        field.put("name", dataType);
+        field.put("doc", description);
+
+        Map <String, Object> schema = new HashMap<String, Object>();
+        schema.put("type", "object");
+        schema.put("fields", Arrays.asList(field));
+
+        Concordia concordia = null;
+        try {
+            concordia = new Concordia(objectToJsonNode(schema).toString());
+        }
+        catch(Exception e) {
+            throw new ShimSchemaException(
+                "Error creating Concordia object.", e);
+        }
+
+        return new Schema(id, version.longValue(), concordia);
     }
 
     /**
@@ -168,9 +218,9 @@ public class ShimUtil {
      * @return An InputStream with the contents.
      */
     public static InputStream fetchUrl(
-        URL url, 
-        Map<String, String> headers,
-        String data) {
+        final URL url, 
+        final Map<String, String> headers,
+        final String data) {
         InputStream inputStream = null;
         try {
             HttpURLConnection request = (HttpURLConnection)url.openConnection();
@@ -213,7 +263,7 @@ public class ShimUtil {
      *
      * @return An InputStream with the contents.
      */
-    public static InputStream fetchUrl(URL url) {
+    public static InputStream fetchUrl(final URL url) {
         return fetchUrl(url, null, null);
     }
 
@@ -225,7 +275,7 @@ public class ShimUtil {
      *
      * @return The JsonNode.
      */
-    public static JsonNode objectToJsonNode(Object object) {
+    public static JsonNode objectToJsonNode(final Object object) {
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode jsonNode = null;
         try {

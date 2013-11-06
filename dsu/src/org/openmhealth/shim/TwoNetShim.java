@@ -57,6 +57,7 @@ public class TwoNetShim implements Shim {
         private final String deviceKey;
         private final String measureType;
         private final String measureName;
+        private final String description;
 
         /**
          * @param deviceKey
@@ -67,11 +68,15 @@ public class TwoNetShim implements Shim {
          *
          * @param measureName
          *        The name of the measure.
+         *
+         * @param description
+         *        The textual description of the data type.
          */
         public DataType(
             String deviceKey, 
             String measureType, 
-            String measureName) {
+            String measureName,
+            String description) {
             if (deviceKey == null) {
                 throw new OmhException("The deviceKey is null.");
             }
@@ -81,15 +86,20 @@ public class TwoNetShim implements Shim {
             if (measureName == null) {
                 throw new OmhException("The measureName is null.");
             }
+            if (description == null) {
+                throw new OmhException("The description is null.");
+            }
 
             this.deviceKey = deviceKey;
             this.measureType = measureType;
             this.measureName = measureName;
+            this.description = description;
         }
 
         public String getDeviceKey() { return deviceKey; }
         public String getMeasureType() { return measureType; }
         public String getMeasureName() { return measureName; }
+        public String getDescription() { return description; }
     }
 
     /**
@@ -104,13 +114,15 @@ public class TwoNetShim implements Shim {
             new DataType(
                 TwoNetShimAuthorization.KEY_EXTRAS_ENTRA_GLUCOMETER,
                 DataType.BLOOD,
-                "glucose"));
+                "glucose",
+                "Glucose level in mg/dL"));
         dataTypeMap.put(
             "temperature_f",
             new DataType(
                 TwoNetShimAuthorization.KEY_EXTRAS_ENTRA_GLUCOMETER,
                 DataType.ENVIRONMENT,
-                "temperature"));
+                "temperature",
+                "Environment ambient temperature in Fahrenheit"));
 
         // Nonin PulseOximeter
         dataTypeMap.put(
@@ -118,13 +130,15 @@ public class TwoNetShim implements Shim {
             new DataType(
                 TwoNetShimAuthorization.KEY_EXTRAS_NONIN_PULSEOXIMETER,
                 DataType.BLOOD,
-                "pulse"));
+                "pulse",
+                "Pulse rate in beats per minute"));
         dataTypeMap.put(
             "spo2_percent",
             new DataType(
                 TwoNetShimAuthorization.KEY_EXTRAS_NONIN_PULSEOXIMETER,
                 DataType.BLOOD,
-                "spo2"));
+                "spo2",
+                "Blood oxygen level percentage"));
 
         // A&D Weight Scale
         dataTypeMap.put(
@@ -132,7 +146,8 @@ public class TwoNetShim implements Shim {
             new DataType(
                 TwoNetShimAuthorization.KEY_EXTRAS_AD_WEIGHT_SCALE,
                 DataType.BODY,
-                "weight"));
+                "weight",
+                "Weight in pounds"));
 
         // A&D Blood Pressure Monitor
         dataTypeMap.put(
@@ -140,25 +155,29 @@ public class TwoNetShim implements Shim {
             new DataType(
                 TwoNetShimAuthorization.KEY_EXTRAS_AD_BLOOD_PRESSURE,
                 DataType.BLOOD,
-                "pulse"));
+                "pulse",
+                "Pulse rate in beats per minute"));
         dataTypeMap.put(
             "systolic_mmhg",
             new DataType(
                 TwoNetShimAuthorization.KEY_EXTRAS_AD_BLOOD_PRESSURE,
                 DataType.BLOOD,
-                "systolic"));
+                "systolic",
+                "Systolic pressure in mmHg"));
         dataTypeMap.put(
             "diastolic_mmhg",
             new DataType(
                 TwoNetShimAuthorization.KEY_EXTRAS_AD_BLOOD_PRESSURE,
                 DataType.BLOOD,
-                "diastolic"));
+                "diastolic",
+                "Diastolic pressure in mmHg"));
         dataTypeMap.put(
             "map_mmhg",
             new DataType(
                 TwoNetShimAuthorization.KEY_EXTRAS_AD_BLOOD_PRESSURE,
                 DataType.BLOOD,
-                "map"));
+                "map",
+                "Mean Arterial Pressure in mmHg"));
 
         // Asthmapolis Spiroscout
         dataTypeMap.put(
@@ -166,7 +185,8 @@ public class TwoNetShim implements Shim {
             new DataType(
                 TwoNetShimAuthorization.KEY_EXTRAS_ASTHMAPOLIS_SPIROSCOUT,
                 DataType.BREATH,
-                "inhale"));
+                "inhale",
+                "Inhale count"));
     }
 
     public TwoNetShim() {
@@ -208,7 +228,17 @@ public class TwoNetShim implements Shim {
 		final String id,
 		final Long version)
 		throws ShimSchemaException {
-        return ShimUtil.getSchema(id, version);
+        // We only have a version 1 for now, so return null for anything but 1.
+        if (!version.equals(1L)) {
+            return null;
+        }
+
+        DataType dataType = getDataType(id);
+
+        return ShimUtil.buildSchemaForSingleValue(
+            id, 
+            version,
+            dataType.getDescription());
     }
 
 	public List<Data> getData(
@@ -235,10 +265,8 @@ public class TwoNetShim implements Shim {
         catch(ShimSchemaException e) {
             throw new ShimDataException("Invalid schema id: " + schemaId, e);
         }
-        DataType dataType = dataTypeMap.get(dataTypeString);
-        if (dataType == null) {
-            throw new ShimDataException("Unknown schema id: " + schemaId);
-        }
+
+        DataType dataType = getDataType(schemaId);
 
         // Build the request.
         Map<String, Object> request = new HashMap<String, Object>();
@@ -346,10 +374,10 @@ public class TwoNetShim implements Shim {
      * @return The guid of the registered device.
      */
     public String registerDevice(
-        String userGuid,
-        String make,
-        String model,
-        String serialNumber) {
+        final String userGuid,
+        final String make,
+        final String model,
+        final String serialNumber) {
         // Build the request.
         Map<String, Object> request = new HashMap<String, Object>();
         request.put("guid", userGuid);
@@ -400,7 +428,9 @@ public class TwoNetShim implements Shim {
      *
      * @return The parsed JSON response.
      */
-    public JsonNode fetchEndpoint(String path, Map<String, Object> data) {
+    public JsonNode fetchEndpoint(
+        final String path, 
+        final Map<String, Object> data) {
         // Build the headers.
         Map<String, String> headers = new HashMap<String, String>();
         headers.put("Authorization", authorizationHeader);
@@ -452,10 +482,36 @@ public class TwoNetShim implements Shim {
      * @return Property object.
      */
     private Map<String, Object> buildRequestProperty(
-        String name, String value) {
+        final String name, 
+        final String value) {
         Map<String, Object> property = new HashMap<String, Object>();
         property.put("name", name);
         property.put("value", value);
         return property;
+    }
+
+    /**
+     * Look up the DataType associated with the given schema ID.
+     *
+     * @param schemaId
+     *        The schema ID.
+     *
+     * @return The associated DataType.
+     */
+    private DataType getDataType(final String schemaId) {
+        String dataTypeString = null;
+        try {
+            dataTypeString = ShimUtil.dataTypeFromSchemaId(schemaId);
+        }
+        catch(ShimSchemaException e) {
+            throw new ShimDataException("Invalid schema id: " + schemaId, e);
+        }
+
+        DataType dataType = dataTypeMap.get(dataTypeString);
+        if (dataType == null) {
+            throw new ShimDataException("Unknown schema id: " + schemaId);
+        }
+
+        return dataType;
     }
 }
