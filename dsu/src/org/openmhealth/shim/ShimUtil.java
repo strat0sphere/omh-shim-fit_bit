@@ -1,10 +1,12 @@
 package org.openmhealth.shim;
 
+import java.io.DataOutputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Map;
 import java.util.Properties;
 
 import name.jenkins.paul.john.concordia.Concordia;
@@ -13,6 +15,7 @@ import org.openmhealth.reference.domain.Schema;
 import org.openmhealth.reference.exception.OmhException;
 import org.openmhealth.shim.exception.ShimSchemaException;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ShimUtil {
@@ -95,7 +98,6 @@ public class ShimUtil {
             + dataTypeFromSchemaId(id) + ".json";
 
         // Load and parse the schema from the schema file.
-        ObjectMapper objectMapper = new ObjectMapper();
         InputStream schemaStream =
             ShimUtil.class.getClassLoader()
                 .getResourceAsStream(schemaResourcePath);
@@ -160,13 +162,34 @@ public class ShimUtil {
      * @param url
      *        The URL to fetch.
      *
+     * @param headers
+     *        Headers to send along with the request.
+     *
      * @return An InputStream with the contents.
      */
-    public static InputStream fetchUrl(URL url) {
+    public static InputStream fetchUrl(
+        URL url, 
+        Map<String, String> headers,
+        String data) {
         InputStream inputStream = null;
         try {
             HttpURLConnection request = (HttpURLConnection)url.openConnection();
-            request.connect();
+
+            if (headers != null) {
+                for (String key : headers.keySet()) {
+                    request.setRequestProperty(key, headers.get(key));
+                }
+            }
+
+            if (data != null) {
+                request.setRequestMethod("POST");
+                request.setDoOutput(true);
+
+                DataOutputStream outputStream = 
+                    new DataOutputStream(request.getOutputStream());
+                outputStream.writeBytes(data);
+                outputStream.flush();
+            }
 
             if (request.getResponseCode() != 200) {
                 throw new OmhException(
@@ -180,5 +203,30 @@ public class ShimUtil {
         }
 
         return inputStream;
+    }
+
+    /**
+     * Fetches a URL.
+     *
+     * @param url
+     *        The URL to fetch.
+     *
+     * @return An InputStream with the contents.
+     */
+    public static InputStream fetchUrl(URL url) {
+        return fetchUrl(url, null, null);
+    }
+
+    public static JsonNode objectToJsonNode(Object object) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        JsonNode jsonNode = null;
+        try {
+            jsonNode = objectMapper.valueToTree(object);
+        }
+        catch(Exception e) {
+            throw new OmhException("JSON encoding error", e);
+        }
+
+        return jsonNode;
     }
 }
