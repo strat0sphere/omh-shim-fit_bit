@@ -21,8 +21,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class TwoNetShimAuthorization implements ShimAuthorization {
+    // Keys used in the ExternalAuthorizationInformation::preAuthState and
+    // ExternalAuthorizationToken#extras maps.
+
+    // User GUID key.
     public static final String KEY_EXTRAS_USER = 
         "user";
+
+    // Device GUID keys.
     public static final String KEY_EXTRAS_ENTRA_GLUCOMETER = 
         "entra_glucometer";
     public static final String KEY_EXTRAS_NONIN_PULSEOXIMETER = 
@@ -43,7 +49,6 @@ public class TwoNetShimAuthorization implements ShimAuthorization {
                 username, shim.getDomain(), null, null, null);
 
         TwoNetShim twoNetShim = (TwoNetShim)shim;
-
 
         // Build the redirect URL. Since this whole auth flow is faked, we're
         // going to redirect directly to the callback URL.
@@ -67,6 +72,8 @@ public class TwoNetShimAuthorization implements ShimAuthorization {
             throw new OmhException("Error creating redirect URL", e);
         }
 
+        // Register a new user and one of each device and store the GUIDs in
+        // the preAuthState map.
         Map<String, Object> preAuthState = new HashMap<String, Object>();
 
         String userGuid = twoNetShim.registerUser();
@@ -101,6 +108,9 @@ public class TwoNetShimAuthorization implements ShimAuthorization {
 	public ExternalAuthorizationToken getAuthorizationToken(
 		final HttpServletRequest httpRequest,
 		final ExternalAuthorizationInformation information) {
+        // The whole flow is faked, so just create a fake
+        // ExternalAuthorizationToken and pass the preAuthState directly to the
+        // extras map.
         return new ExternalAuthorizationToken(
             information.getUsername(), information.getDomain(),
             "unused", null, Long.MAX_VALUE, information.getPreAuthState());

@@ -217,6 +217,14 @@ public class ShimUtil {
         return fetchUrl(url, null, null);
     }
 
+    /**
+     * Turn a generic Object into a JsonNode.
+     *
+     * @param object
+     *        The object.
+     *
+     * @return The JsonNode.
+     */
     public static JsonNode objectToJsonNode(Object object) {
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode jsonNode = null;

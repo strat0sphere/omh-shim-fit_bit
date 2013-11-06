@@ -43,7 +43,12 @@ public class TwoNetShim implements Shim {
 
     private final String authorizationHeader;
 
+    /**
+     * Class to represent how to extract a given type of data point from the
+     * 2Net API.
+     */
     private static class DataType {
+        // Valid measure types.
         private final static String BLOOD = "blood";
         private final static String BODY = "body";
         private final static String BREATH = "breath";
@@ -53,6 +58,16 @@ public class TwoNetShim implements Shim {
         private final String measureType;
         private final String measureName;
 
+        /**
+         * @param deviceKey
+         *        The extras key used to store the device's key.
+         *
+         * @param measureType
+         *        The type of the measure.
+         *
+         * @param measureName
+         *        The name of the measure.
+         */
         public DataType(
             String deviceKey, 
             String measureType, 
@@ -77,6 +92,9 @@ public class TwoNetShim implements Shim {
         public String getMeasureName() { return measureName; }
     }
 
+    /**
+     * Maps schema IDs to DataType objects.
+     */
     private static Map<String, DataType> dataTypeMap = 
         new HashMap<String, DataType>();
     static {
@@ -222,7 +240,7 @@ public class TwoNetShim implements Shim {
             throw new ShimDataException("Unknown schema id: " + schemaId);
         }
 
-        // Fetch the data.
+        // Build the request.
         Map<String, Object> request = new HashMap<String, Object>();
 
         String userGuid = UUID.randomUUID().toString();
@@ -232,6 +250,7 @@ public class TwoNetShim implements Shim {
 
         Map<String, Object> filter = new HashMap<String, Object>();
 
+        // Apply date filters.
         if (startDate != null) {
             filter.put("startDate", startDate.getMillis() / 1000);
         }
@@ -246,8 +265,10 @@ public class TwoNetShim implements Shim {
         Map<String, Object> outerObject = new HashMap<String, Object>();
         outerObject.put("trackRequest", request);
 
+        // Execute the request.
         JsonNode response = fetchEndpoint("user/track/filtered", outerObject);
 
+        // Build the return data from the response JSON.
         List<Data> outputData = new ArrayList<Data>();
         try {
             JsonNode measureArray =
@@ -256,6 +277,8 @@ public class TwoNetShim implements Shim {
                     .get("measures")
                     .get("measure");
 
+            // Iterate through the returned measures and create a Data for each
+            // one.
             for (int i = 0; i < measureArray.size(); ++i) {
                 JsonNode measure = measureArray.get(i);
 
@@ -284,7 +307,13 @@ public class TwoNetShim implements Shim {
         return outputData;
     }
 
+    /**
+     * Register a new user using the 2Net API.
+     *
+     * @return The guid of the user.
+     */
     public String registerUser() {
+        // Build the request.
         Map<String, Object> request = new HashMap<String, Object>();
 
         String userGuid = UUID.randomUUID().toString();
@@ -293,16 +322,35 @@ public class TwoNetShim implements Shim {
         Map<String, Object> outerObject = new HashMap<String, Object>();
         outerObject.put("registerRequest", request);
 
+        // Execute the request.
         fetchEndpoint("register", outerObject);
 
         return userGuid;
     }
 
+    /**
+     * Register a device using the 2Net API.
+     *
+     * @param userGuid
+     *        The guid of the user to register the device to.
+     *
+     * @param make
+     *        The make of the device.
+     *
+     * @param model
+     *        The model of the device.
+     *
+     * @param serialNumber
+     *        The serial number of the device.
+     *
+     * @return The guid of the registered device.
+     */
     public String registerDevice(
         String userGuid,
         String make,
         String model,
         String serialNumber) {
+        // Build the request.
         Map<String, Object> request = new HashMap<String, Object>();
         request.put("guid", userGuid);
         request.put("type", "2net");
@@ -320,8 +368,10 @@ public class TwoNetShim implements Shim {
         Map<String, Object> outerObject = new HashMap<String, Object>();
         outerObject.put("trackRegistrationRequest", request);
 
+        // Execute the reqeust.
         JsonNode response = fetchEndpoint("user/track/register", outerObject);
 
+        // Extract the returned guid.
         String deviceGuid = null;
         try {
             deviceGuid = 
@@ -338,7 +388,20 @@ public class TwoNetShim implements Shim {
         return deviceGuid;
     }
 
+    /**
+     * Fetches a 2Net endpoint and parses the returned JSON.
+     *
+     * @param path
+     *        Endpoint path.
+     *
+     * @param data
+     *        Data to pass with request. If data is present, request is assumed
+     *        to be a POST, otherwise GET.
+     *
+     * @return The parsed JSON response.
+     */
     public JsonNode fetchEndpoint(String path, Map<String, Object> data) {
+        // Build the headers.
         Map<String, String> headers = new HashMap<String, String>();
         headers.put("Authorization", authorizationHeader);
         headers.put("Accept", "application/json");
@@ -346,6 +409,7 @@ public class TwoNetShim implements Shim {
             headers.put("Content-Type", "application/json");
         }
 
+        // Build the URL.
         URL endpointUrl = null;
         try {
             endpointUrl = 
@@ -357,11 +421,13 @@ public class TwoNetShim implements Shim {
             throw new OmhException("Error constructing URL", e);
         }
 
+        // Execute the request.
         InputStream responseStream =
             ShimUtil.fetchUrl(
                 endpointUrl, headers, 
                 ShimUtil.objectToJsonNode(data).toString());
 
+        // Parse the returned JSON.
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode responseJson = null;
         try {
@@ -374,6 +440,17 @@ public class TwoNetShim implements Shim {
         return responseJson;
     }
 
+    /**
+     * Builds a property object used in 2Net API requests.
+     *
+     * @param name
+     *        Property name
+     *
+     * @param value
+     *        Property value
+     *
+     * @return Property object.
+     */
     private Map<String, Object> buildRequestProperty(
         String name, String value) {
         Map<String, Object> property = new HashMap<String, Object>();
