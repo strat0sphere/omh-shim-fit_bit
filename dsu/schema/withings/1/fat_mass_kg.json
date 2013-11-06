@@ -3,7 +3,8 @@
     "fields":[
         {
             "type": "number",
-            "name": "fat_mass_kg"
+            "name": "fat_mass_kg",
+            "doc": "Fat Mass Weight (kg)"
         }
     ]
 }

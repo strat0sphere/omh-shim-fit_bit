@@ -3,7 +3,8 @@
     "fields":[
         {
             "type": "number",
-            "name": "diastolic_blood_pressure_mmhg"
+            "name": "diastolic_blood_pressure_mmhg",
+            "doc": "Diastolic Blood Pressure (mmHg)"
         }
     ]
 }

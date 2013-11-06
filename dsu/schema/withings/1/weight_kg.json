@@ -3,7 +3,8 @@
     "fields":[
         {
             "type": "number",
-            "name": "weight_kg"
+            "name": "weight_kg",
+            "doc": "Weight (kg)"
         }
     ]
 }

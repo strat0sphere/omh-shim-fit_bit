@@ -3,7 +3,8 @@
     "fields":[
         {
             "type": "number",
-            "name": "systolic_blood_pressure_mmhg"
+            "name": "systolic_blood_pressure_mmhg",
+            "doc": "Systolic Blood Pressure (mmHg)"
         }
     ]
 }

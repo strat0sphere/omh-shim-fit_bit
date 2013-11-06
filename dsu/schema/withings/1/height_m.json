@@ -4,7 +4,8 @@
     "fields":[
         {
             "type": "number",
-            "name": "height_m"
+            "name": "height_m",
+            "doc": "Height (meter)"
         }
     ]
 }

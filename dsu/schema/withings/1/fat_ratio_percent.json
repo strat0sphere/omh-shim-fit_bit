@@ -3,7 +3,8 @@
     "fields":[
         {
             "type": "number",
-            "name": "fat_ratio_percent"
+            "name": "fat_ratio_percent",
+            "doc": "Fat Ratio (%)"
         }
     ]
 }

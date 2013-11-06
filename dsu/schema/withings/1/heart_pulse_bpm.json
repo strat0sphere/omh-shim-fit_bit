@@ -3,7 +3,8 @@
     "fields":[
         {
             "type": "number",
-            "name": "heart_pulse_bpm"
+            "name": "heart_pulse_bpm",
+            "doc": "Heart Pulse (bpm)"
         }
     ]
 }
