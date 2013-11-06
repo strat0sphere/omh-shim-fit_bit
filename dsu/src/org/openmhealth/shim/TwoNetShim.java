@@ -45,6 +45,8 @@ public class TwoNetShim implements Shim {
 
     private static class DataType {
         private final static String BLOOD = "blood";
+        private final static String BODY = "body";
+        private final static String BREATH = "breath";
         private final static String ENVIRONMENT = "environment";
 
         private final String deviceKey;
@@ -78,19 +80,75 @@ public class TwoNetShim implements Shim {
     private static Map<String, DataType> dataTypeMap = 
         new HashMap<String, DataType>();
     static {
+        // Entra Glucometer
         dataTypeMap.put(
             "glucose_mg_per_dl",
             new DataType(
                 TwoNetShimAuthorization.KEY_EXTRAS_ENTRA_GLUCOMETER,
                 DataType.BLOOD,
                 "glucose"));
-
         dataTypeMap.put(
             "temperature_f",
             new DataType(
                 TwoNetShimAuthorization.KEY_EXTRAS_ENTRA_GLUCOMETER,
                 DataType.ENVIRONMENT,
                 "temperature"));
+
+        // Nonin PulseOximeter
+        dataTypeMap.put(
+            "nonin_pulse_bpm",
+            new DataType(
+                TwoNetShimAuthorization.KEY_EXTRAS_NONIN_PULSEOXIMETER,
+                DataType.BLOOD,
+                "pulse"));
+        dataTypeMap.put(
+            "spo2_percent",
+            new DataType(
+                TwoNetShimAuthorization.KEY_EXTRAS_NONIN_PULSEOXIMETER,
+                DataType.BLOOD,
+                "spo2"));
+
+        // A&D Weight Scale
+        dataTypeMap.put(
+            "weight_lbs",
+            new DataType(
+                TwoNetShimAuthorization.KEY_EXTRAS_AD_WEIGHT_SCALE,
+                DataType.BODY,
+                "weight"));
+
+        // A&D Blood Pressure Monitor
+        dataTypeMap.put(
+            "ad_pulse_bpm",
+            new DataType(
+                TwoNetShimAuthorization.KEY_EXTRAS_AD_BLOOD_PRESSURE,
+                DataType.BLOOD,
+                "pulse"));
+        dataTypeMap.put(
+            "systolic_mmhg",
+            new DataType(
+                TwoNetShimAuthorization.KEY_EXTRAS_AD_BLOOD_PRESSURE,
+                DataType.BLOOD,
+                "systolic"));
+        dataTypeMap.put(
+            "diastolic_mmhg",
+            new DataType(
+                TwoNetShimAuthorization.KEY_EXTRAS_AD_BLOOD_PRESSURE,
+                DataType.BLOOD,
+                "diastolic"));
+        dataTypeMap.put(
+            "map_mmhg",
+            new DataType(
+                TwoNetShimAuthorization.KEY_EXTRAS_AD_BLOOD_PRESSURE,
+                DataType.BLOOD,
+                "map"));
+
+        // Asthmapolis Spiroscout
+        dataTypeMap.put(
+            "inhale_count",
+            new DataType(
+                TwoNetShimAuthorization.KEY_EXTRAS_ASTHMAPOLIS_SPIROSCOUT,
+                DataType.BREATH,
+                "inhale"));
     }
 
     public TwoNetShim() {
