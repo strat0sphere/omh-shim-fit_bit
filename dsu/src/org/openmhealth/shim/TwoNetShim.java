@@ -41,6 +41,12 @@ public class TwoNetShim implements Shim {
      */
     private static final String SCHEMA_PREFIX = "omh:" + DOMAIN + ":";
 
+    /**
+     * The base URL for all 2Net endpoints.
+     */
+    private static final String ENDPOINT_BASE_URL =
+        "https://twonetcom.qualcomm.com/kernel/partner/";
+
     private final String authorizationHeader;
 
     /**
@@ -285,7 +291,6 @@ public class TwoNetShim implements Shim {
         if (endDate != null) {
             filter.put("endDate", endDate.getMillis() / 1000);
         }
-
         if (filter.size() > 0) {
             request.put("filter", filter);
         }
@@ -307,7 +312,7 @@ public class TwoNetShim implements Shim {
 
             // Iterate through the returned measures and create a Data for each
             // one.
-            for (int i = 0; i < measureArray.size(); ++i) {
+            for (int i = numToSkip.intValue(); i < measureArray.size(); ++i) {
                 JsonNode measure = measureArray.get(i);
 
                 DateTime dateTime = 
@@ -326,6 +331,11 @@ public class TwoNetShim implements Shim {
                         token.getUsername(), schemaId, version.longValue(),
                         new MetaData(null, dateTime),
                         ShimUtil.objectToJsonNode(outputDatum)));
+
+                // Stop if we have enough data points.
+                if (outputData.size() >= numToReturn) {
+                    break;
+                }
             }
         }
         catch(Exception e) {
@@ -442,10 +452,7 @@ public class TwoNetShim implements Shim {
         // Build the URL.
         URL endpointUrl = null;
         try {
-            endpointUrl = 
-                new URL(
-                    "https://twonetcom.qualcomm.com/kernel/partner/"
-                    + path);
+            endpointUrl = new URL(ENDPOINT_BASE_URL + path);
         }
         catch(MalformedURLException e) {
             throw new OmhException("Error constructing URL", e);

@@ -224,7 +224,7 @@ public class WithingsShim implements Shim {
                 break;
             }
 
-            // Stop even we have enough data points.
+            // Stop if we have enough data points.
             if (outputData.size() >= numToReturn) {
                 break;
             }
