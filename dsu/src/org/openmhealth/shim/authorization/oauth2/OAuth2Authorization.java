@@ -1,10 +1,13 @@
 package org.openmhealth.shim.authorization.oauth2;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,6 +23,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.openmhealth.reference.domain.ExternalAuthorizationInformation;
 import org.openmhealth.reference.domain.ExternalAuthorizationToken;
 import org.openmhealth.reference.exception.OmhException;
+import org.openmhealth.reference.request.AuthorizeDomainRequest;
 import org.openmhealth.shim.Shim;
 import org.openmhealth.shim.authorization.ShimAuthorization;
 
@@ -61,7 +65,7 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 		 * The JSON key for when the token expires.
 		 */
 		public static final String JSON_KEY_EXPIRES_IN = "expires_in";
-		
+
 		/**
 		 * The access token to use when requesting data.
 		 */
@@ -77,19 +81,19 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 		 */
 		@JsonProperty(JSON_KEY_EXPIRES_IN)
 		public final long expiresIn;
-		
+
 		/**
 		 * Builds a response object, presumably using Jackson.
-		 * 
+		 *
 		 * @param accessToken
 		 *        The access token to use when requesting data.
-		 * 
+		 *
 		 * @param refreshToken
 		 *        The refresh token to use to get a new token.
-		 * 
+		 *
 		 * @param expiresIn
 		 *        The number of seconds before this token expires.
-		 * 
+		 *
 		 * @throws OmhException
 		 *         A required field is missing.
 		 */
@@ -99,7 +103,7 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 			@JsonProperty(JSON_KEY_REFRESH_TOKEN) final String refreshToken,
 			@JsonProperty(JSON_KEY_EXPIRES_IN) final Long expiresIn)
 			throws OmhException {
-			
+
 			// Validate the access token.
 			if(accessToken == null) {
 				throw new OmhException("The access token is null.");
@@ -107,15 +111,15 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 			else {
 				this.accessToken = accessToken;
 			}
-			
+
 			// Get the refresh token.
 			this.refreshToken = refreshToken;
-			
+
 			// Get the expiration.
 			this.expiresIn = expiresIn;
 		}
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see org.openmhealth.shim.authorization.ShimAuthorization#getAuthorizationInformation(org.openmhealth.shim.Shim, java.lang.String, javax.servlet.http.HttpServletRequest)
@@ -126,20 +130,46 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 		final String username,
 		final HttpServletRequest request)
 		throws IllegalArgumentException {
-		
+
 		if(shim == null) {
 			throw new IllegalArgumentException("The shim is null.");
 		}
 		if(username == null) {
 			throw new IllegalArgumentException("The username is null.");
 		}
-		
+
 		// Get this shim's domain.
 		String domain = shim.getDomain();
-		
-		// Get the authorize URL.
-		URL authorizeUrl = getAuthorizeUrl();
-		
+
+		// Build the authorize URL.
+		StringBuilder authorizeUrlBuilder =
+		    new StringBuilder(getAuthorizeUrl().toString());
+        try {
+            authorizeUrlBuilder.append("?response_type=code");
+            authorizeUrlBuilder
+                .append(
+                    "&client_id=" + URLEncoder.encode(getClientId(), "UTF-8"));
+            authorizeUrlBuilder
+                .append(
+                    "&redirect_uri=" +
+                        URLEncoder
+                            .encode(
+                                AuthorizeDomainRequest.buildUrl(request),
+                                "UTF-8"));
+        }
+        catch(UnsupportedEncodingException e) {
+            throw new OmhException("The redirect URL could not be built.");
+        }
+
+        // Convert it into a URL object.
+        URL authorizeUrl;
+        try {
+            authorizeUrl = new URL(authorizeUrlBuilder.toString());
+        }
+        catch(MalformedURLException e) {
+            throw new OmhException("The authorize URL is not a valid URL.");
+        }
+
 		// Construct an object to return to the user.
 		return
 			new ExternalAuthorizationInformation(
@@ -149,7 +179,7 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 				null,
 				null);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see org.openmhealth.shim.authorization.ShimAuthorization#getAuthorizationToken(javax.servlet.http.HttpServletRequest, org.openmhealth.reference.domain.ExternalAuthorizationInformation)
@@ -158,7 +188,7 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 	public ExternalAuthorizationToken getAuthorizationToken(
 		final HttpServletRequest httpRequest,
 		final ExternalAuthorizationInformation information) {
-		
+
 		// Get the request URL.
 		URI tokenUri;
 		try {
@@ -167,16 +197,16 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 		catch(URISyntaxException e) {
 			throw new OmhException("The token URL was not a valid URL.", e);
 		}
-		
+
 		// Get the connection to the token URL.
 		HttpPost request = new HttpPost(tokenUri);
-		
+
 		// Add our secret as a header.
 		request.addHeader("Authorization", "Basic " + getClientSecret());
-		
+
 		// Retrieve the code from the request.
 		String code = httpRequest.getParameter("code");
-		
+
 		// Add the parameters.
         List<NameValuePair> parameters = new ArrayList<NameValuePair>(2);
         parameters
@@ -187,7 +217,7 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
         parameters.add(new BasicNameValuePair("code", code));
         parameters
         	.add(new BasicNameValuePair("client_id", getClientId()));
-        
+
         // Set the parameters as the request's entity.
         try {
 			request.setEntity(new UrlEncodedFormEntity(parameters));
@@ -195,10 +225,10 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 		catch(UnsupportedEncodingException e) {
 			throw new OmhException("URL enconding is unknown.");
 		}
-        
+
         // Build a client to handle the request.
         HttpClient client = HttpClientBuilder.create().build();
-        
+
         // Make the request and capture the response.
         HttpResponse response;
 		try {
@@ -207,21 +237,26 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 		catch(IOException e) {
 			throw new OmhException("The token request failed.", e);
 		}
-        
+
         // Ensure the response succeeded.
         if(response.getStatusLine().getStatusCode() != 200) {
         	throw new OmhException("The token request failed.");
         }
-        
+
+        // Get the response input stream.
+        InputStream responseStream;
+        try {
+            responseStream = response.getEntity().getContent();
+        }
+        catch(IOException e) {
+            throw new OmhException("The response could not be read.", e);
+        }
+
         // Parse the response.
         ObjectMapper mapper = new ObjectMapper();
         Response responseObject;
 		try {
-			responseObject =
-				mapper
-        			.readValue(
-        				response.getEntity().getContent(),
-        				Response.class);
+			responseObject = mapper.readValue(responseStream, Response.class);
 		}
 		catch(JsonMappingException | JsonParseException e) {
 			throw new OmhException("The response was not valid JSON.", e);
@@ -229,16 +264,16 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 		catch(IllegalStateException e) {
 			throw new OmhException("The parser failed.", e);
 		}
-		catch(IOException e) {
-			throw new OmhException("The response could not be read.", e);
-		}
-        
+        catch(IOException e) {
+            throw new OmhException("The response could not be read.", e);
+        }
+
         // Build and return a token.
         return
         	new ExternalAuthorizationToken(
-        		information.getUsername(), 
-        		information.getDomain(), 
-        		responseObject.accessToken, 
+        		information.getUsername(),
+        		information.getDomain(),
+        		responseObject.accessToken,
         		responseObject.refreshToken,
         		// We subtract a second to account for our own processing time.
         		// This decreases (although, not eliminates) the chance of a
@@ -246,7 +281,7 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
         		(responseObject.expiresIn - 1) * 1000,
         		null);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see org.openmhealth.shim.authorization.ShimAuthorization#refreshAuthorizationToken(org.openmhealth.reference.domain.ExternalAuthorizationToken)
@@ -254,7 +289,7 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 	@Override
 	public ExternalAuthorizationToken refreshAuthorizationToken(
 		final ExternalAuthorizationToken oldToken) {
-		
+
 		// Get the request URL.
 		URI refreshUri;
 		try {
@@ -263,13 +298,13 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 		catch(URISyntaxException e) {
 			throw new OmhException("The refresh URL was not a valid URL.", e);
 		}
-		
+
 		// Get the connection to the refresh URL.
 		HttpPost request = new HttpPost(refreshUri);
-		
+
 		// Add our secret as a header.
 		request.addHeader("Authorization", "Basic " + getClientSecret());
-		
+
 		// Add the parameters.
         List<NameValuePair> parameters = new ArrayList<NameValuePair>(2);
         parameters
@@ -282,7 +317,7 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
         		new BasicNameValuePair(
         			"refresh_token",
         			oldToken.getRefreshToken()));
-        
+
         // Set the parameters as the request's entity.
         try {
 			request.setEntity(new UrlEncodedFormEntity(parameters));
@@ -290,10 +325,10 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 		catch(UnsupportedEncodingException e) {
 			throw new OmhException("URL enconding is unknown.");
 		}
-        
+
         // Build a client to handle the request.
         HttpClient client = HttpClientBuilder.create().build();
-        
+
         // Make the request and capture the response.
         HttpResponse response;
 		try {
@@ -302,12 +337,12 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 		catch(IOException e) {
 			throw new OmhException("The token request failed.", e);
 		}
-        
+
         // Ensure the response succeeded.
         if(response.getStatusLine().getStatusCode() != 200) {
         	throw new OmhException("The token refresh request failed.");
         }
-        
+
         // Parse the response.
         ObjectMapper mapper = new ObjectMapper();
         Response responseObject;
@@ -327,13 +362,13 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 		catch(IOException e) {
 			throw new OmhException("The response could not be read.", e);
 		}
-        
+
         // Build and return a token.
         return
         	new ExternalAuthorizationToken(
-        		oldToken.getUsername(), 
-        		oldToken.getDomain(), 
-        		responseObject.accessToken, 
+        		oldToken.getUsername(),
+        		oldToken.getDomain(),
+        		responseObject.accessToken,
         		responseObject.refreshToken,
         		// We subtract a second to account for our own processing time.
         		// This decreases (although, not eliminates) the chance of a
@@ -341,40 +376,40 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
         		(responseObject.expiresIn - 1) * 1000,
         		null);
 	}
-	
+
 	/**
 	 * Returns the URL to redirect the user to begin the authorization flow.
-	 * 
+	 *
 	 * @return The URL to the OAuth v2 authorize end-point.
 	 */
 	public abstract URL getAuthorizeUrl();
-	
+
 	/**
 	 * Returns the OAuth v2 URL where an access code can be exchanged for an
 	 * access token.
-	 * 
+	 *
 	 * @return The URL to the OAuth v2 token end-point.
 	 */
 	public abstract URL getTokenUrl();
-	
+
 	/**
 	 * Returns the OAuth URL where a refresh token can be exchanged for a new
 	 * access token and refresh token.
-	 * 
+	 *
 	 * @return The URL to the OAuth v2 refresh end-point.
 	 */
 	public abstract URL getRefreshUrl();
-	
+
 	/**
 	 * Returns the shim's OAuth v2 client ID for Open mHealth.
-	 * 
+	 *
 	 * @return The shim's OAuth v2 client ID for Open mHealth.
 	 */
 	public abstract String getClientId();
-	
+
 	/**
 	 * Returns the shim's OAuth v2 client secret for Open mHealth.
-	 * 
+	 *
 	 * @return The shim's OAuth v2 client secret for Open mHealth.
 	 */
 	public abstract String getClientSecret();
