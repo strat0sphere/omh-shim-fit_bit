@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2013 Open mHealth
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,6 @@ package org.openmhealth.reference.servlet;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URL;
 import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
@@ -84,7 +83,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
  * <p>
  * The controller for the version 1 of the Open mHealth API.
  * </p>
- * 
+ *
  * <p>
  * This class has no state and, therefore, is immutable.
  * </p>
@@ -98,7 +97,7 @@ public class Version1 {
 	 * The root path for queries to this version of the API.
 	 */
 	public static final String PATH = "/v1";
-	
+
 	/**
 	 * The username parameter for the authenticate requests.
 	 */
@@ -111,7 +110,7 @@ public class Version1 {
 	 * The authentication token parameter for requests that require
 	 * authentication.
 	 */
-	public static final String PARAM_AUTHENTICATION_AUTH_TOKEN = 
+	public static final String PARAM_AUTHENTICATION_AUTH_TOKEN =
 		"omh_auth_token";
 	/**
 	 * The authorization flag that indicates if the user granted the
@@ -134,7 +133,7 @@ public class Version1 {
 	 * paging.
 	 */
 	public static final String PARAM_PAGING_NUM_TO_RETURN = "num_to_return";
-	
+
 	/**
 	 * The parameter for the unique identifier for a schema. This is sometimes
 	 * used as part of the URI for the RESTful implementation.
@@ -145,7 +144,7 @@ public class Version1 {
 	 * part of the URI for the RESTful implementation.
 	 */
 	public static final String PARAM_SCHEMA_VERSION = "schema_version";
-	
+
 	/**
 	 * A parameter that limits the results to only those that were created on
 	 * or after the given date.
@@ -156,7 +155,7 @@ public class Version1 {
 	 * or before the given date.
 	 */
 	public static final String PARAM_DATE_END = "t_end";
-	
+
 	/**
 	 * The parameter that indicates to which user the data should pertain.
 	 */
@@ -171,7 +170,7 @@ public class Version1 {
 	 * returned.
 	 */
 	public static final String PARAM_COLUMN_LIST = "column_list";
-	
+
 	/**
 	 * The parameter for the data when it is being uploaded.
 	 */
@@ -185,36 +184,36 @@ public class Version1 {
 	 * The header for the URL to the next set of data for list requests.
 	 */
 	public static final String HEADER_NEXT = "Next";
-	
+
 	/**
 	 * The encoding for the previous and next URLs.
 	 */
 	private static final String URL_ENCODING_UTF_8 = "UTF-8";
-	
+
 	/**
 	 * The logger for this class.
 	 */
 	private static final Logger LOGGER =
 		Logger.getLogger(Version1.class.getCanonicalName());
-	
+
 	/**
 	 * Creates an authentication request, authenticates the user and, if
 	 * successful, returns the user's credentials.
-	 * 
+	 *
 	 * @param username
 	 *        The username of the user attempting to authenticate.
-	 * 
+	 *
 	 * @param password
 	 *        The password of the user attempting to authenticate.
-	 * 
+	 *
 	 * @param request
 	 *        The HTTP request object.
-	 * 
+	 *
 	 * @param response
 	 *        The HTTP response object.
-	 * 
+	 *
 	 * @return The authorization token.
-	 * 
+	 *
 	 * @throws OmhException
 	 *         There was a problem with the request. This could be any of the
 	 *         sub-classes of {@link OmhException}.
@@ -232,14 +231,14 @@ public class Version1 {
 		final HttpServletRequest request,
 		final HttpServletResponse response)
 		throws OmhException {
-		
+
 		// Create the authentication request from parameters.
 		AuthenticationToken token =
 			handleRequest(
 				request,
 				response,
 				new AuthenticationRequest(username, password));
-		
+
 		// Add a cookie for the authentication token.
 		Cookie cookie =
 			new Cookie(PARAM_AUTHENTICATION_AUTH_TOKEN, token.getToken());
@@ -256,7 +255,7 @@ public class Version1 {
 		cookie.setSecure(true);
 		// Add the cookie to the response.
 		response.addCookie(cookie);
-		
+
 		// Return the token.
 		return token.getToken();
 	}
@@ -264,20 +263,20 @@ public class Version1 {
 	/**
 	 * Creates a registration request for a third-party ("client" in OAuth
 	 * parlance).
-	 * 
+	 *
 	 * @param name
 	 *        The third-party's name.
-	 * 
+	 *
 	 * @param description
 	 *        The third-party's description.
-	 * 
+	 *
 	 * @param redirectUri
 	 *        The location to redirect the user to after they have responded to
 	 *        an authorization request from this third-party.
-	 *        
+	 *
 	 * @param request
 	 *        The HTTP request.
-	 * 
+	 *
 	 * @param response
 	 *        The HTTP response.
 	 */
@@ -299,7 +298,7 @@ public class Version1 {
 			final String redirectUri,
 		final HttpServletRequest request,
 		final HttpServletResponse response) {
-		
+
 		// Make sure the authentication token was a parameter. This prevents
 		// malicious code from "hijacking" the token by performing a POST and
 		// having the browser inject it as only a cookie.
@@ -309,13 +308,13 @@ public class Version1 {
 					.getAttribute(
 						AuthFilter
 							.ATTRIBUTE_AUTHENTICATION_TOKEN_IS_PARAM)) {
-			
+
 			throw
 				new OmhException(
 					"To register a third-party, the authentication token is " +
 						"required as a parameter.");
 		}
-		
+
 		return
 			handleRequest(
 				request,
@@ -325,12 +324,12 @@ public class Version1 {
 						request
 							.getAttribute(
 								AuthFilter
-									.ATTRIBUTE_AUTHENTICATION_TOKEN), 
-					name, 
-					description, 
+									.ATTRIBUTE_AUTHENTICATION_TOKEN),
+					name,
+					description,
 					redirectUri));
 	}
-	
+
 	/**
 	 * <p>
 	 * The OAuth call where a user has been redirected to us by some
@@ -338,7 +337,7 @@ public class Version1 {
 	 * request, verify that the user is who they say they are, and grant or
 	 * deny the request.
 	 * </p>
-	 * 
+	 *
 	 * <p>
 	 * This call will either redirect the user to the authorization HTML page
 	 * with the parameters embedded or it will return a non-2xx response with a
@@ -350,20 +349,20 @@ public class Version1 {
 	 * avoid this, we should simply return an error string and let the user
 	 * decide.
 	 * </p>
-	 * 
+	 *
 	 * @param request
 	 *        The HTTP request.
-	 * 
+	 *
 	 * @param response
 	 *        The HTTP response.
-	 * 
+	 *
 	 * @return A OAuth-specified JSON response that indicates what was wrong
 	 *         with the request. If nothing was wrong with the request, a
 	 *         redirect would have been returned.
-	 * 
+	 *
 	 * @throws IOException
 	 *         There was a problem responding to the client.
-	 * 
+	 *
 	 * @throws OAuthSystemException
 	 *         The OAuth library encountered an error.
 	 */
@@ -374,7 +373,7 @@ public class Version1 {
 		final HttpServletRequest request,
 		final HttpServletResponse response)
 		throws IOException, OAuthSystemException {
-		
+
 		// Create the OAuth request from the HTTP request.
 		OAuthAuthzRequest oauthRequest;
 		try {
@@ -385,16 +384,16 @@ public class Version1 {
 		catch(OAuthProblemException e) {
 			// Create the OAuth response.
 			OAuthResponse oauthResponse =
-				OAuthASResponse
+				OAuthResponse
 					.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 					.error(e)
 					.buildJSONMessage();
-			
+
 			// Set the status and return the error message.
 			response.setStatus(oauthResponse.getResponseStatus());
 			return oauthResponse.getBody();
 		}
-		
+
 		// Validate that the user is requesting a "code" response type, which
 		// is the only response type we accept.
 		try {
@@ -403,20 +402,20 @@ public class Version1 {
 					.CODE
 					.toString()
 					.equals(oauthRequest.getResponseType())) {
-				
+
 				// Create the OAuth response.
 				OAuthResponse oauthResponse =
-					OAuthASResponse
+					OAuthResponse
 						.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 						.setError(CodeResponse.UNSUPPORTED_RESPONSE_TYPE)
 						.setErrorDescription(
 							"The response type must be '" +
 								ResponseType.CODE.toString() +
-								"' but was instead: " + 
+								"' but was instead: " +
 								oauthRequest.getResponseType())
 						.setState(oauthRequest.getState())
 						.buildJSONMessage();
-				
+
 				// Set the status and return the error message.
 				response.setStatus(oauthResponse.getResponseStatus());
 				return oauthResponse.getBody();
@@ -425,25 +424,25 @@ public class Version1 {
 		catch(IllegalArgumentException e) {
 			// Create the OAuth response.
 			OAuthResponse oauthResponse =
-				OAuthASResponse
+				OAuthResponse
 					.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 					.setError(CodeResponse.UNSUPPORTED_RESPONSE_TYPE)
 					.setErrorDescription(
-						"The response type is unknown: " + 
+						"The response type is unknown: " +
 							oauthRequest.getResponseType())
 					.setState(oauthRequest.getState())
 					.buildJSONMessage();
-			
+
 			// Set the status and return the error message.
 			response.setStatus(oauthResponse.getResponseStatus());
 			return oauthResponse.getBody();
 		}
-		
+
 		// Make sure no redirect URI was given.
 		if(oauthRequest.getRedirectURI() != null) {
 			// Create the OAuth response.
 			OAuthResponse oauthResponse =
-				OAuthASResponse
+				OAuthResponse
 					.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 					.setError(CodeResponse.INVALID_REQUEST)
 					.setErrorDescription(
@@ -451,46 +450,46 @@ public class Version1 {
 							"when the account was created will be used.")
 					.setState(oauthRequest.getState())
 					.buildJSONMessage();
-			
+
 			// Set the status and return the error message.
 			response.setStatus(oauthResponse.getResponseStatus());
 			return oauthResponse.getBody();
 		}
-		
+
 		// Attempt to get the third-party.
-		ThirdParty thirdParty = 
+		ThirdParty thirdParty =
 			ThirdPartyBin
 				.getInstance().getThirdParty(oauthRequest.getClientId());
 		// If the third-party is unknown, reject the request.
 		if(thirdParty == null) {
 			// Create the OAuth response.
 			OAuthResponse oauthResponse =
-				OAuthASResponse
+				OAuthResponse
 					.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 					.setError(CodeResponse.INVALID_REQUEST)
 					.setErrorDescription(
-						"The client ID is unknown: " + 
+						"The client ID is unknown: " +
 							oauthRequest.getClientId())
 					.setState(oauthRequest.getState())
 					.buildJSONMessage();
-			
+
 			// Set the status and return the error message.
 			response.setStatus(oauthResponse.getResponseStatus());
 			return oauthResponse.getBody();
 		}
-		
+
 		// Attempt to get the scopes.
 		Set<String> scopes = oauthRequest.getScopes();
 		if((scopes == null) || (scopes.size() == 0)) {
 			// Create the OAuth response.
 			OAuthResponse oauthResponse =
-				OAuthASResponse
+				OAuthResponse
 					.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 					.setError(CodeResponse.INVALID_SCOPE)
 					.setErrorDescription("A scope is required.")
 					.setState(oauthRequest.getState())
 					.buildJSONMessage();
-			
+
 			// Set the status and return the error message.
 			response.setStatus(oauthResponse.getResponseStatus());
 			return oauthResponse.getBody();
@@ -501,30 +500,30 @@ public class Version1 {
 			if(registry.getSchemas(scope, null, 0, 1).size() != 1) {
 				// Create the OAuth response.
 				OAuthResponse oauthResponse =
-					OAuthASResponse
+					OAuthResponse
 						.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 						.setError(CodeResponse.INVALID_SCOPE)
 						.setErrorDescription(
 							"Each scope must be a known schema ID: " + scope)
 						.setState(oauthRequest.getState())
 						.buildJSONMessage();
-				
+
 				// Set the status and return the error message.
 				response.setStatus(oauthResponse.getResponseStatus());
 				return oauthResponse.getBody();
 			}
 		}
-		
+
 		// Create the temporary code to be granted or rejected by the user.
-		AuthorizationCode code = 
+		AuthorizationCode code =
 			new AuthorizationCode(
-				thirdParty, 
-				oauthRequest.getScopes(), 
+				thirdParty,
+				oauthRequest.getScopes(),
 				oauthRequest.getState());
-		
+
 		// Store the authorization code.
 		AuthorizationCodeBin.getInstance().storeCode(code);
-		
+
 		// Build the scope as specified by the OAuth specification.
 		StringBuilder scopeBuilder = new StringBuilder();
 		for(String scope : code.getScopes()) {
@@ -535,7 +534,7 @@ public class Version1 {
 			// Add the scope.
 			scopeBuilder.append(scope);
 		}
-		
+
 		// Set the redirect.
 		response
 			.sendRedirect(
@@ -555,7 +554,7 @@ public class Version1 {
 		// Since we are redirecting the user, we don't need to return anything.
 		return null;
 	}
-	
+
 	/**
 	 * <p>
 	 * Handles the response from the user regarding whether or not the user
@@ -566,22 +565,22 @@ public class Version1 {
 	 * back to the third-party with a code, which the third-party can then use
 	 * to call us later to determine the actual failure.
 	 * </p>
-	 * 
+	 *
 	 * @param username
 	 *        The user's username.
-	 * 
+	 *
 	 * @param password
 	 *        The user's password.
-	 * 
+	 *
 	 * @param granted
 	 *        Whether or not the permission was granted.
-	 * 
+	 *
 	 * @param code
 	 *        The code that was created, but not yet validated by the user.
-	 * 
+	 *
 	 * @param request
 	 *        The HTTP request object.
-	 * 
+	 *
 	 * @param response
 	 *        The HTTP response object.
 	 */
@@ -608,26 +607,26 @@ public class Version1 {
 		final HttpServletRequest request,
 		final HttpServletResponse response)
 		throws IOException, OAuthSystemException {
-		
+
 		// Get the user. If the user's credentials are invalid for whatever
 		// reason, an exception will be thrown and the page will echo back the
 		// reason.
 		User user = AuthenticationRequest.getUser(username, password);
-		
+
 		// Get the authorization code.
-		AuthorizationCode authCode = 
+		AuthorizationCode authCode =
 			AuthorizationCodeBin.getInstance().getCode(code);
 		// If the code is unknown, we cannot redirect back to the third-party
 		// because we don't know who they are.
 		if(authCode == null) {
 			throw new OmhException("The authorization code is unknown.");
 		}
-		
+
 		// Verify that the code has not yet expired.
 		if(System.currentTimeMillis() > authCode.getExpirationTime()) {
 			response
 				.sendRedirect(
-					OAuthASResponse
+					OAuthResponse
 						.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 						.setError(CodeResponse.ACCESS_DENIED)
 						.setErrorDescription("The code has expired.")
@@ -639,18 +638,18 @@ public class Version1 {
 						.getLocationUri());
 			return;
 		}
-		
+
 		// Get the response if it already exists.
 		AuthorizationCodeResponse codeResponse =
 			AuthorizationCodeResponseBin.getInstance().getResponse(code);
-		
+
 		// If the response does not exist, attempt to create a new one and
 		// save it.
 		if(codeResponse == null) {
 			// Create the new code.
 			codeResponse =
 				new AuthorizationCodeResponse(authCode, user, granted);
-			
+
 			// Store it.
 			AuthorizationCodeResponseBin
 				.getInstance().storeVerification(codeResponse);
@@ -659,10 +658,10 @@ public class Version1 {
 		else if(
 			! user
 				.getUsername().equals(codeResponse.getOwner().getUsername())) {
-			
+
 			response
 				.sendRedirect(
-					OAuthASResponse
+					OAuthResponse
 						.errorResponse(HttpServletResponse.SC_UNAUTHORIZED)
 						.setError(CodeResponse.ACCESS_DENIED)
 						.setErrorDescription(
@@ -679,7 +678,7 @@ public class Version1 {
 		else if(granted == codeResponse.getGranted()) {
 			response
 				.sendRedirect(
-					OAuthASResponse
+					OAuthResponse
 						.errorResponse(HttpServletResponse.SC_UNAUTHORIZED)
 						.setError(CodeResponse.ACCESS_DENIED)
 						.setErrorDescription(
@@ -695,7 +694,7 @@ public class Version1 {
 		}
 		// Otherwise, this is simply a repeat of the same request as before,
 		// and we can simply ignore it.
-		
+
 		// Redirect the user back to the third-party with the authorization
 		// code and state.
 		response
@@ -711,7 +710,7 @@ public class Version1 {
 					.buildQueryMessage()
 					.getLocationUri());
 	}
-	
+
 	/**
 	 * <p>
 	 * The OAuth call when a third-party is attempting to exchange their
@@ -721,17 +720,17 @@ public class Version1 {
 	 * either an authorization token or an error message indicating what was
 	 * wrong with the request.
 	 * </p>
-	 * 
+	 *
 	 * @param request
 	 *        The HTTP request object.
-	 * 
+	 *
 	 * @param response
 	 *        The HTTP response object.
-	 * 
+	 *
 	 * @return An OAuth-specified JSON error message or an OAuth-specified JSON
 	 *         response that includes the access and refresh tokens as well as
 	 *         the expiration and other information.
-	 * 
+	 *
 	 * @throws OAuthSystemException
 	 *         The OAuth library encountered an error.
 	 */
@@ -742,7 +741,7 @@ public class Version1 {
 		final HttpServletRequest request,
 		final HttpServletResponse response)
 		throws OAuthSystemException, IOException {
-		
+
 		// Attempt to build an OAuth request from the HTTP request.
 		OAuthTokenRequest oauthRequest;
 		try {
@@ -752,7 +751,7 @@ public class Version1 {
 		// have no other choice but to reject it as a bad request.
 		catch(OAuthProblemException e) {
 			// Build the OAuth response.
-	        OAuthResponse oauthResponse = 
+	        OAuthResponse oauthResponse =
 	        	OAuthResponse
 	            	.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 	            	.error(e)
@@ -760,11 +759,11 @@ public class Version1 {
 
 	        // Set the HTTP response status code from the OAuth response.
 	        response.setStatus(oauthResponse.getResponseStatus());
-	        
+
 	        // Return the error message.
 	        return oauthResponse.getBody();
 	    }
-		
+
 		// Attempt to get the client.
 		ThirdParty thirdParty =
 			ThirdPartyBin
@@ -773,29 +772,29 @@ public class Version1 {
 		if(thirdParty == null) {
 			// Create the OAuth response.
 			OAuthResponse oauthResponse =
-				OAuthASResponse
+				OAuthResponse
 					.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 					.setError(TokenResponse.INVALID_CLIENT)
 					.setErrorDescription(
 						"The client is unknown: " + oauthRequest.getClientId())
 					.buildJSONMessage();
-			
+
 			// Set the status and return the error message.
 			response.setStatus(oauthResponse.getResponseStatus());
 			return oauthResponse.getBody();
 		}
-		
+
 		// Get the given client secret.
 		String thirdPartySecret = oauthRequest.getClientSecret();
 		if(thirdPartySecret == null) {
 			// Create the OAuth response.
 			OAuthResponse oauthResponse =
-				OAuthASResponse
+				OAuthResponse
 					.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 					.setError(TokenResponse.INVALID_CLIENT)
 					.setErrorDescription("The client secret is required.")
 					.buildJSONMessage();
-			
+
 			// Set the status and return the error message.
 			response.setStatus(oauthResponse.getResponseStatus());
 			return oauthResponse.getBody();
@@ -804,17 +803,17 @@ public class Version1 {
 		else if(! thirdPartySecret.equals(thirdParty.getSecret())) {
 			// Create the OAuth response.
 			OAuthResponse oauthResponse =
-				OAuthASResponse
+				OAuthResponse
 					.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 					.setError(TokenResponse.INVALID_CLIENT)
 					.setErrorDescription("The client secret is incorrect.")
 					.buildJSONMessage();
-			
+
 			// Set the status and return the error message.
 			response.setStatus(oauthResponse.getResponseStatus());
 			return oauthResponse.getBody();
 		}
-		
+
 		// Get the grant-type.
 		GrantType grantType;
 		String grantTypeString = oauthRequest.getGrantType();
@@ -833,18 +832,18 @@ public class Version1 {
 		else {
 			// Create the OAuth response.
 			OAuthResponse oauthResponse =
-				OAuthASResponse
+				OAuthResponse
 					.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 					.setError(TokenResponse.INVALID_GRANT)
 					.setErrorDescription(
 						"The grant type is unknown: " + grantTypeString)
 					.buildJSONMessage();
-			
+
 			// Set the status and return the error message.
 			response.setStatus(oauthResponse.getResponseStatus());
 			return oauthResponse.getBody();
 		}
-		
+
 		// Handle the different types of token requests.
 		AuthorizationToken token;
 		if(GrantType.AUTHORIZATION_CODE.equals(grantType)) {
@@ -853,19 +852,19 @@ public class Version1 {
 			if(codeString == null) {
 				// Create the OAuth response.
 				OAuthResponse oauthResponse =
-					OAuthASResponse
+					OAuthResponse
 						.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 						.setError(TokenResponse.INVALID_REQUEST)
 						.setErrorDescription(
 							"An authorization code must be given to be " +
 								"exchanged for an authorization token.")
 						.buildJSONMessage();
-				
+
 				// Set the status and return the error message.
 				response.setStatus(oauthResponse.getResponseStatus());
 				return oauthResponse.getBody();
 			}
-			
+
 			// Attempt to lookup the actual AuthorizationCode object.
 			AuthorizationCode code =
 				AuthorizationCodeBin.getInstance().getCode(codeString);
@@ -873,25 +872,25 @@ public class Version1 {
 			if(code == null) {
 				// Create the OAuth response.
 				OAuthResponse oauthResponse =
-					OAuthASResponse
+					OAuthResponse
 						.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 						.setError(TokenResponse.INVALID_REQUEST)
 						.setErrorDescription(
 							"The given authorization code is unknown: " +
 								codeString)
 						.buildJSONMessage();
-				
+
 				// Set the status and return the error message.
 				response.setStatus(oauthResponse.getResponseStatus());
 				return oauthResponse.getBody();
 			}
-			
+
 			// Verify that the client asking for a token is the same as the one
 			// that requested the code.
 			if(! code.getThirdParty().getId().equals(thirdParty.getId())) {
 				// Create the OAuth response.
 				OAuthResponse oauthResponse =
-					OAuthASResponse
+					OAuthResponse
 						.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 						.setError(TokenResponse.INVALID_REQUEST)
 						.setErrorDescription(
@@ -899,7 +898,7 @@ public class Version1 {
 								"code: " +
 								codeString)
 						.buildJSONMessage();
-				
+
 				// Set the status and return the error message.
 				response.setStatus(oauthResponse.getResponseStatus());
 				return oauthResponse.getBody();
@@ -909,19 +908,19 @@ public class Version1 {
 			if(System.currentTimeMillis() > code.getExpirationTime()) {
 				// Create the OAuth response.
 				OAuthResponse oauthResponse =
-					OAuthASResponse
+					OAuthResponse
 						.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 						.setError(TokenResponse.INVALID_REQUEST)
 						.setErrorDescription(
 							"The given authorization code has expired: " +
 								codeString)
 						.buildJSONMessage();
-				
+
 				// Set the status and return the error message.
 				response.setStatus(oauthResponse.getResponseStatus());
 				return oauthResponse.getBody();
 			}
-			
+
 			// Use the code to lookup the response information and error out if
 			// a user has not yet verified it.
 			AuthorizationCodeResponse codeResponse =
@@ -930,35 +929,35 @@ public class Version1 {
 			if(codeResponse == null) {
 				// Create the OAuth response.
 				OAuthResponse oauthResponse =
-					OAuthASResponse
+					OAuthResponse
 						.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 						.setError(TokenResponse.INVALID_REQUEST)
 						.setErrorDescription(
 							"A user has not yet verified the code: " +
 								codeString)
 						.buildJSONMessage();
-				
+
 				// Set the status and return the error message.
 				response.setStatus(oauthResponse.getResponseStatus());
 				return oauthResponse.getBody();
 			}
-			
+
 			// Determine if the user granted access and, if not, error out.
 			if(! codeResponse.getGranted()) {
 				// Create the OAuth response.
 				OAuthResponse oauthResponse =
-					OAuthASResponse
+					OAuthResponse
 						.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 						.setError(TokenResponse.INVALID_REQUEST)
 						.setErrorDescription(
 							"The user denied the authorization: " + codeString)
 						.buildJSONMessage();
-				
+
 				// Set the status and return the error message.
 				response.setStatus(oauthResponse.getResponseStatus());
 				return oauthResponse.getBody();
 			}
-			
+
 			// Create a new token.
 			token = new AuthorizationToken(codeResponse);
 		}
@@ -969,14 +968,14 @@ public class Version1 {
 			if(refreshToken == null) {
 				// Create the OAuth response.
 				OAuthResponse oauthResponse =
-					OAuthASResponse
+					OAuthResponse
 						.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 						.setError(TokenResponse.INVALID_REQUEST)
 						.setErrorDescription(
 							"An refresh token must be given to be exchanged " +
 								"for a new authorization token.")
 						.buildJSONMessage();
-				
+
 				// Set the status and return the error message.
 				response.setStatus(oauthResponse.getResponseStatus());
 				return oauthResponse.getBody();
@@ -988,17 +987,17 @@ public class Version1 {
 			if(currentToken == null) {
 				// Create the OAuth response.
 				OAuthResponse oauthResponse =
-					OAuthASResponse
+					OAuthResponse
 						.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 						.setError(TokenResponse.INVALID_REQUEST)
 						.setErrorDescription("The refresh token is unknown.")
 						.buildJSONMessage();
-				
+
 				// Set the status and return the error message.
 				response.setStatus(oauthResponse.getResponseStatus());
 				return oauthResponse.getBody();
 			}
-			
+
 			// Verify that the client asking for a token is the same as the one
 			// that was issued the refresh token.
 			// This is probably a very serious offense and should probably
@@ -1006,21 +1005,21 @@ public class Version1 {
 			if(!
 				currentToken
 					.getThirdParty().getId().equals(thirdParty.getId())) {
-				
+
 				// Create the OAuth response.
 				OAuthResponse oauthResponse =
-					OAuthASResponse
+					OAuthResponse
 						.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 						.setError(TokenResponse.INVALID_REQUEST)
 						.setErrorDescription(
 							"This token does not belong to this client.")
 						.buildJSONMessage();
-				
+
 				// Set the status and return the error message.
 				response.setStatus(oauthResponse.getResponseStatus());
 				return oauthResponse.getBody();
 			}
-			
+
 			// Create a new authorization token from the current one.
 			token = new AuthorizationToken(currentToken);
 		}
@@ -1030,7 +1029,7 @@ public class Version1 {
 		else {
 			// Create the OAuth response.
 			OAuthResponse oauthResponse =
-				OAuthASResponse
+				OAuthResponse
 					.errorResponse(HttpServletResponse.SC_BAD_REQUEST)
 					.setError(TokenResponse.UNSUPPORTED_GRANT_TYPE)
 					.setErrorDescription(
@@ -1041,15 +1040,15 @@ public class Version1 {
 							"': " +
 							grantType.toString())
 					.buildJSONMessage();
-			
+
 			// Set the status and return the error message.
 			response.setStatus(oauthResponse.getResponseStatus());
 			return oauthResponse.getBody();
 		}
-		
+
 		// Store the new token.
 		AuthorizationTokenBin.getInstance().storeToken(token);
-		
+
 		// Build the response.
 		OAuthResponse oauthResponse =
 			OAuthASResponse
@@ -1059,10 +1058,10 @@ public class Version1 {
 				.setRefreshToken(token.getRefreshToken())
 				.setTokenType(TokenType.BEARER.toString())
 				.buildJSONMessage();
-		
+
 		// Set the status.
 		response.setStatus(oauthResponse.getResponseStatus());
-		
+
 		// Set the content-type.
 		response.setContentType("application/json");
 
@@ -1071,7 +1070,7 @@ public class Version1 {
 		for(String headerKey : headers.keySet()) {
 			response.addHeader(headerKey, headers.get(headerKey));
 		}
-		
+
 		// Return the body.
 		return oauthResponse.getBody();
 	}
@@ -1079,16 +1078,16 @@ public class Version1 {
 	/**
 	 * Determines if a user has authorized this server to read data from the
 	 * given domain.
-	 * 
+	 *
 	 * @param domain
 	 *        The domain in question.
-	 * 
+	 *
 	 * @param request
 	 *        The HTTP request object.
-	 * 
+	 *
 	 * @param response
 	 *        The HTTP response object.
-	 * 
+	 *
 	 * @return If the user has already granted authorization, null is returned;
 	 *         otherwise, the information determining the state of the
 	 *         authorization (hasn't tried, already tried and rejected, etc.)
@@ -1104,75 +1103,76 @@ public class Version1 {
 			final String domain,
 		final HttpServletRequest request,
 		final HttpServletResponse response) {
-		
+
 		// Get the authentication token.
 		AuthenticationToken authToken =
 			(AuthenticationToken)
 				request
 					.getAttribute(
 						AuthFilter.ATTRIBUTE_AUTHENTICATION_TOKEN);
-		
+
 		return
 			handleRequest(
 				request,
 				response,
 				new UserAuthorizedDomainRequest(authToken, domain, request));
 	}
-	
+
 	/**
 	 * Handles a response from the user.
-	 * 
+	 *
 	 * @param state The state that was generated by the client.
-	 * 
+	 *
 	 * @param request
 	 *        The HTTP request object.
-	 * 
+	 *
 	 * @param response
 	 *        The HTTP response object.
-	 *        
+	 *
 	 * @return The URL where the user should be redirected.
 	 */
 	@RequestMapping(
 		value = AuthorizeDomainRequest.PATH,
 		method = { RequestMethod.GET, RequestMethod.POST })
-	public URL authorizeDomain(
+	public String authorizeDomain(
 		@RequestParam(
 			value = "state",
 			required = true)
 			final String state,
 		final HttpServletRequest request,
 		final HttpServletResponse response) {
-		
+
 		return
-			handleRequest(
-				request,
-				response,
-				new AuthorizeDomainRequest(request, state));
+		    "redirect:" +
+    			handleRequest(
+    				request,
+    				response,
+    				new AuthorizeDomainRequest(request, state));
 	}
-	
+
 	/**
 	 * <p>
 	 * Creates a new user in the database and sends an activation email.
 	 * </p>
-	 * 
+	 *
 	 * <p>
 	 * For systems that already have their own user activation/management
 	 * system in place, either remove this function or simply remove the
 	 * RequestMapping annotation.
 	 * </p>
-	 * 
+	 *
 	 * @param username
 	 *        The new user's username.
-	 * 
+	 *
 	 * @param password
 	 *        The new user's password
-	 * 
+	 *
 	 * @param email
 	 *        The new user's email address.
-	 * 
+	 *
 	 * @param request
 	 *        The HTTP request object.
-	 * 
+	 *
 	 * @param response
 	 *        The HTTP response object.
 	 */
@@ -1185,16 +1185,16 @@ public class Version1 {
 			required = true)
 			final String username,
 		@RequestParam(
-			value = User.JSON_KEY_PASSWORD, 
-			required = true) 
+			value = User.JSON_KEY_PASSWORD,
+			required = true)
 			final String password,
 		@RequestParam(
-			value = User.JSON_KEY_EMAIL, 
-			required = true) 
+			value = User.JSON_KEY_EMAIL,
+			required = true)
 			final String email,
 		final HttpServletRequest request,
 		final HttpServletResponse response) {
-		
+
 		handleRequest(
 			request,
 			response,
@@ -1204,29 +1204,29 @@ public class Version1 {
 				email,
 				buildRootUrl(request)));
 	}
-	
+
 	/**
 	 * <p>
 	 * Creates a new user in the database and sends an activation email.
 	 * </p>
-	 * 
+	 *
 	 * <p>
 	 * For systems that already have their own user activation/management
 	 * system in place, either remove this function or simply remove the
 	 * RequestMapping annotation.
 	 * </p>
-	 * 
+	 *
 	 * @param username
 	 *        The new user's username.
-	 *        
+	 *
 	 * @param password
 	 *        The new user's password
-	 *        
+	 *
 	 * @param email The new user's email address.
-	 * 
+	 *
 	 * @param request
 	 *        The HTTP request object.
-	 * 
+	 *
 	 * @param response
 	 *        The HTTP response object.
 	 */
@@ -1240,35 +1240,35 @@ public class Version1 {
 			final String registrationId,
 		final HttpServletRequest request,
 		final HttpServletResponse response) {
-		
+
 		handleRequest(
 			request,
 			response,
 			new UserActivationRequest(registrationId));
 	}
-	
+
 	@RequestMapping(value = "testing", method = RequestMethod.GET)
 	public @ResponseBody User testing() {
 		return UserBin.getInstance().getUser("sink.thaw");
 	}
-	
+
 	/**
 	 * If the root of the hierarchy is requested, return the registry, which is
 	 * a map of all of the schema IDs to their high-level information, e.g.
 	 * name, description, latest version, etc.
-	 * 
+	 *
 	 * @param numToSkip
 	 *        The number of data points to skip to facilitate paging.
-	 * 
+	 *
 	 * @param numToReturn
 	 *        The number of data points to return to facilitate paging.
-	 * 
+	 *
 	 * @param request
 	 *        The HTTP request object.
-	 * 
+	 *
 	 * @param response
 	 *        The HTTP response object.
-	 * 
+	 *
 	 * @return An array of all of the known schemas, limited by paging.
 	 */
 	@RequestMapping(value = { "", "/" }, method = { RequestMethod.GET, RequestMethod.HEAD })
@@ -1285,30 +1285,30 @@ public class Version1 {
 			final long numToReturn,
 		final HttpServletRequest request,
 		final HttpServletResponse response) {
-		
+
 		return
 			handleRequest(
 				request,
 				response,
 				new SchemaIdsRequest(numToSkip, numToReturn));
 	}
-	
+
 	/**
 	 * Creates a request to get the information about the given schema ID, e.g.
 	 * the name, description, version list, etc.
-	 * 
+	 *
 	 * @param schemaId
 	 *        The schema ID from the URL.
-	 * 
+	 *
 	 * @param numToSkip
 	 *        The number of data points to skip to facilitate paging.
-	 * 
+	 *
 	 * @param numToReturn
 	 *        The number of data points to return to facilitate paging.
-	 * 
+	 *
 	 * @param response
 	 *        The HTTP response object.
-	 * 
+	 *
 	 * @return An array of schemas, one for each version of the given schema
 	 *         ID.
 	 */
@@ -1329,27 +1329,27 @@ public class Version1 {
 			final long numToReturn,
 		final HttpServletRequest request,
 		final HttpServletResponse response) {
-		
-		return 
+
+		return
 			handleRequest(
 				request,
 				response,
 				new SchemaVersionsRequest(schemaId, numToSkip, numToReturn));
 	}
-	
+
 	/**
 	 * Creates a request to get the definition of a specific schema ID's
 	 * version.
-	 * 
+	 *
 	 * @param schemaId
 	 *        The schema ID from the URL.
-	 * 
+	 *
 	 * @param version
 	 *        The schema version from the URL.
-	 * 
+	 *
 	 * @param response
 	 *        The HTTP response object.
-	 * 
+	 *
 	 * @return The schema for the given schema ID-version pair.
 	 */
 	@RequestMapping(
@@ -1362,52 +1362,52 @@ public class Version1 {
 		@PathVariable(PARAM_SCHEMA_VERSION) final Long version,
 		final HttpServletRequest request,
 		final HttpServletResponse response) {
-		
+
 		return
 			handleRequest(
 				request,
 				response,
 				new SchemaRequest(schemaId, version));
 	}
-	
+
 	/**
 	 * Retrieves the requested data.
-	 * 
+	 *
 	 * @param schemaId
 	 *        The ID for the schema to which the data pertains. This is part of
 	 *        the request's path.
-	 * 
+	 *
 	 * @param version
 	 *        The version of the schema to which the data pertains. This is
 	 *        part of the request's path.
-	 * 
+	 *
 	 * @param owner
 	 *        The user that owns the desired data.
-	 * 
+	 *
 	 * @param startDate
 	 *        The earliest point from which data should be read.
-	 * 
+	 *
 	 * @param endDate
 	 *        The latest point from which data should be read.
-	 * 
+	 *
 	 * @param columnList
 	 *        The list of columns to return to the user.
-	 * 
+	 *
 	 * @param numToSkip
 	 *        The number of data points to skip to facilitate paging.
-	 * 
+	 *
 	 * @param numToReturn
 	 *        The number of data points to return to facilitate paging.
-	 * 
+	 *
 	 * @param request
 	 *        The HTTP request object.
-	 * 
+	 *
 	 * @param response
 	 *        The HTTP response object.
-	 * 
+	 *
 	 * @return The data as a JSON array of JSON objects where each object
 	 *         represents a single data point.
-	 * 
+	 *
 	 * @see Data
 	 */
 	@RequestMapping(
@@ -1444,7 +1444,7 @@ public class Version1 {
 			final long numToReturn,
 		final HttpServletRequest request,
 		final HttpServletResponse response) {
-		
+
 		// Parse the start and end dates.
 		DateTime parsedStartDate = null, parsedEndDate = null;
 		if(startDate != null) {
@@ -1467,7 +1467,7 @@ public class Version1 {
 		}
 
 		// Handle the request.
-		return 
+		return
 			handleRequest(
 				request,
 				response,
@@ -1491,23 +1491,23 @@ public class Version1 {
 					numToSkip,
 					numToReturn));
 	}
-	
+
 	/**
 	 * Writes the requested data.
-	 * 
+	 *
 	 * @param schemaId
 	 *        The ID for the schema to which the data pertains.
-	 * 
+	 *
 	 * @param version
 	 *        The version of the schema to which the data pertains.
-	 *        
+	 *
 	 * @param data
 	 *        The data to be uploaded, which should be a JSON array of JSON
 	 *        objects where each object is a single data point.
-	 *        
+	 *
 	 * @param request
 	 *        The HTTP request object.
-	 * 
+	 *
 	 * @param response
 	 *        The HTTP response object.
 	 */
@@ -1523,7 +1523,7 @@ public class Version1 {
 			final String data,
 		final HttpServletRequest request,
 		final HttpServletResponse response) {
-		
+
 		// Make sure the authentication token was a parameter. This prevents
 		// malicious code from "hijacking" the token by performing a POST and
 		// having the browser inject it as only a cookie.
@@ -1532,22 +1532,22 @@ public class Version1 {
 				.getAttribute(
 					AuthFilter.ATTRIBUTE_AUTHENTICATION_TOKEN_IS_PARAM);
 		if(
-			(authenticationTokenIsParam == null) || 
+			(authenticationTokenIsParam == null) ||
 			(! ((Boolean) authenticationTokenIsParam))) {
-			
+
 			throw
 				new OmhException(
 					"To upload data, the authentication token is required " +
 						"as a parameter.");
 		}
-		
+
 		// Get the authentication token.
 		AuthenticationToken authToken =
 			(AuthenticationToken)
 				request
 					.getAttribute(
 						AuthFilter.ATTRIBUTE_AUTHENTICATION_TOKEN);
-		
+
 		// Handle the request.
 		handleRequest(
 			request,
@@ -1558,64 +1558,64 @@ public class Version1 {
 				version,
 				data));
 	}
-	
+
 	/**
 	 * Builds the base URL for the request that came in. This is everything up
 	 * to our web applications base, e.g. "http://localhost:8080/omh".
-	 * 
+	 *
 	 * @param httpRequest
 	 *        The original HTTP request.
-	 * 
+	 *
 	 * @return The base URL for the request.
 	 */
 	public static String buildRootUrl(final HttpServletRequest httpRequest) {
 		// It must be a HTTP request.
 		StringBuilder builder = new StringBuilder("http");
-		
+
 		// If security was used add the "s" to make it "https".
 		if(httpRequest.isSecure()) {
 			builder.append('s');
 		}
-		
+
 		// Add the protocol separator.
 		builder.append("://");
-		
+
 		// Add the name of the server where the request was sent.
 		builder.append(httpRequest.getServerName());
-		
+
 		// Add the port separator and the port.
 		builder.append(':').append(httpRequest.getServerPort());
-		
+
 		// Add the context path, e.g. "/omh".
 		builder.append(httpRequest.getContextPath());
-		
+
 		// Return the root URL.
 		return builder.toString();
 	}
-	
+
 	/**
 	 * Handles a request then sets the meta-data as HTTP headers and returns
 	 * the data to be returned to the user.
-	 * 
+	 *
 	 * @param httpRequest
 	 *        The HTTP request.
-	 * 
+	 *
 	 * @param httpResponse
 	 *        The HTTP response.
-	 * 
+	 *
 	 * @param request
 	 *        The already-built, domain-specific request to be serviced.
-	 * 
+	 *
 	 * @return The object to be returned to the user.
 	 */
 	private <T> T handleRequest(
 		final HttpServletRequest httpRequest,
 		final HttpServletResponse httpResponse,
 		final Request<? extends T> request) {
-		
+
 		// Service the request.
 		request.service();
-		
+
 		// Retrieve the meta-data and add it as HTTP headers.
 		Map<String, Object> metaData = request.getMetaData();
 		if(metaData != null) {
@@ -1626,7 +1626,7 @@ public class Version1 {
 						metaData.get(metaDataKey).toString());
 			}
 		}
-		
+
 		// If this is a list request, add the next and previous parameters.
 		if(request instanceof ListRequest) {
 			// Create the previous and next headers, if appropriate.
@@ -1635,7 +1635,7 @@ public class Version1 {
 				httpResponse,
 				(ListRequest<?>) request);
 		}
-		
+
 		// Return the data.
 		if(RequestMethod.HEAD.toString().equals(httpRequest.getMethod())) {
 			return null;
@@ -1644,28 +1644,28 @@ public class Version1 {
 			return request.getData();
 		}
 	}
-	
+
 	/**
 	 * <p>
 	 * Builds the URL used to make this request based on the request.
 	 * </p>
-	 * 
+	 *
 	 * <p>
 	 * The URL is built from all of the information Java provides about the
 	 * system including the hostname. However, in a distributed environment,
-	 * this may not be adequate or correct. 
+	 * this may not be adequate or correct.
 	 * </p>
-	 * 
+	 *
 	 * @param httpRequest
 	 *        The original HTTP request.
-	 * 
+	 *
 	 * @return The base URL used to make the request that is calling this
 	 *         function.
 	 */
 	private String buildRequestUrl(final HttpServletRequest httpRequest) {
 		// Start with the root URL.
 		StringBuilder builder = new StringBuilder(buildRootUrl(httpRequest));
-		
+
 		// Add the specific path in the request.
 		builder.append(httpRequest.getPathInfo());
 
@@ -1673,16 +1673,16 @@ public class Version1 {
 		// added to it.
 		return builder.toString();
 	}
-	
+
 	/**
 	 * Creates and adds the Previous and Next headers.
-	 * 
+	 *
 	 * @param httpRequest
 	 *        The HTTP request.
-	 * 
+	 *
 	 * @param httpResponse
 	 *        The HTTP response.
-	 * 
+	 *
 	 * @param listRequest
 	 *        The ListRequest used to get the paging headers.
 	 */
@@ -1690,20 +1690,20 @@ public class Version1 {
 		final HttpServletRequest httpRequest,
 		final HttpServletResponse httpResponse,
 		final ListRequest<?> listRequest) {
-		
+
 		// Get the new set of parameters.
 		Map<String, String> parameters =
 			listRequest.getPreviousNextParameters();
-		
+
 		// If we skipped any data, create a Previous header.
 		if(listRequest.getNumToSkip() > 0) {
 			// Build the base URL.
 			StringBuilder previousBuilder =
 				new StringBuilder(buildRequestUrl(httpRequest));
-			
+
 			// Add the query separator.
 			previousBuilder.append('?');
-			
+
 			// Use a try-catch in case our encoding, which is the same for
 			// each parameter, is unknown.
 			try {
@@ -1717,7 +1717,7 @@ public class Version1 {
 					else {
 						previousBuilder.append('&');
 					}
-					
+
 					// Add the parameter.
 					previousBuilder
 						.append(
@@ -1730,12 +1730,12 @@ public class Version1 {
 									parameters.get(parameterKey),
 									URL_ENCODING_UTF_8));
 				}
-				
+
 				// Add the paging parameters.
 				if(parameters.size() > 0) {
 					previousBuilder.append('&');
 				}
-				
+
 				// Calculate the previous number to skip.
 				long previousNumToSkip =
 					listRequest.getNumToSkip() -
@@ -1779,16 +1779,16 @@ public class Version1 {
 				LOGGER
 					.log(
 						Level.SEVERE,
-						"The encoding is unknown so the " + 
-							HEADER_PREVIOUS + 
+						"The encoding is unknown so the " +
+							HEADER_PREVIOUS +
 							" header could not be built.");
 			}
-			
+
 			// Add the previous header.
 			httpResponse
 				.setHeader(HEADER_PREVIOUS, previousBuilder.toString());
 		}
-		
+
 		// If the total data-set size is greater than the number of points
 		// skipped plus the number of points requested, then there must be more
 		// data, and a Next header should be added.
@@ -1798,10 +1798,10 @@ public class Version1 {
 			// Build the base URL.
 			StringBuilder nextBuilder =
 				new StringBuilder(buildRequestUrl(httpRequest));
-			
+
 			// Add the query separator.
 			nextBuilder.append('?');
-			
+
 			// Use a try-catch in case our encoding, which is the same for
 			// each parameter, is unknown.
 			try {
@@ -1815,7 +1815,7 @@ public class Version1 {
 					else {
 						nextBuilder.append('&');
 					}
-					
+
 					// Add the parameter.
 					nextBuilder
 						.append(
@@ -1828,12 +1828,12 @@ public class Version1 {
 									parameters.get(parameterKey),
 									URL_ENCODING_UTF_8));
 				}
-				
+
 				// Add the paging parameters.
 				if(parameters.size() > 0) {
 					nextBuilder.append('&');
 				}
-				
+
 				// Calculate the previous number to skip.
 				long nextNumToSkip =
 					listRequest.getNumToSkip() +
@@ -1851,7 +1851,7 @@ public class Version1 {
 						.encode(
 							Long.toString(nextNumToSkip),
 							URL_ENCODING_UTF_8));
-				
+
 				// Add the parameter separator.
 				nextBuilder.append('&');
 
@@ -1873,11 +1873,11 @@ public class Version1 {
 				LOGGER
 					.log(
 						Level.SEVERE,
-						"The encoding is unknown so the " + 
-							HEADER_NEXT + 
+						"The encoding is unknown so the " +
+							HEADER_NEXT +
 							" header could not be built.");
 			}
-			
+
 			// Add the previous header.
 			httpResponse
 				.setHeader(HEADER_NEXT, nextBuilder.toString());

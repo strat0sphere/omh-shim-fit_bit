@@ -29,19 +29,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  * @author John Jenkins
  */
-public class AuthorizeDomainRequest extends Request<URL> {
+public class AuthorizeDomainRequest extends Request<String> {
 	/**
 	 * The path from the root for this request.
 	 */
 	public static final String PATH = "/auth/oauth/external_authorization";
-	
+
 	/**
 	 * <p>
 	 * The expected state that should be supplied by the client after
 	 * redirecting a user to authorize Open mHealth to read an external party's
 	 * data for that user.
 	 * </p>
-	 * 
+	 *
 	 * @author John Jenkins
 	 */
 	@JsonIgnoreProperties(ignoreUnknown = true)
@@ -55,7 +55,7 @@ public class AuthorizeDomainRequest extends Request<URL> {
 		 */
 		public static final String JSON_KEY_CLIENT_URL =
 			"client_url";
-		
+
 		/**
 		 * The ID that was given to the client when it asked about whether or
 		 * not a user had authorized Open mHealth to read data from an external
@@ -70,20 +70,20 @@ public class AuthorizeDomainRequest extends Request<URL> {
 		 */
 		@JsonProperty(JSON_KEY_CLIENT_URL)
 		private final URL clientUrl;
-		
+
 		/**
 		 * Creates a new State object.
-		 * 
+		 *
 		 * @param authorizeId
 		 *        The ID that was given to the client when it asked if the user
 		 *        had authorized Open mHealth to read their data from an
 		 *        external entity. This should correlate with
 		 *        {@link ExternalAuthorizationInformation#JSON_KEY_AUTHORIZE_ID}
 		 *        .
-		 * 
+		 *
 		 * @param clientUrl
 		 *        The URL to use to redirect the user back to the client.
-		 * 
+		 *
 		 * @throws OmhException
 		 *         A parameter was invalid.
 		 */
@@ -102,7 +102,7 @@ public class AuthorizeDomainRequest extends Request<URL> {
 			else {
 				this.authorizeId = authorizeId;
 			}
-			
+
 			// Validate the client URL.
 			if(clientUrl == null) {
 				throw new OmhException("The client URL is null.");
@@ -111,32 +111,32 @@ public class AuthorizeDomainRequest extends Request<URL> {
 				this.clientUrl = clientUrl;
 			}
 		}
-		
+
 		/**
 		 * Returns the ID that was given to the client when it asked if the
 		 * user had authorized Open mHealth to read their data from an external
 		 * entity.
-		 * 
+		 *
 		 * @return The ID that was given to the client when it asked if the
 		 *         user had authorized Open mHealth to read their data from an
 		 *         external entity.
-		 * 
+		 *
 		 * @see ExternalAuthorizationInformation#JSON_KEY_AUTHORIZE_ID
 		 */
 		public String getAuthorizeId() {
 			return authorizeId;
 		}
-		
+
 		/**
 		 * Returns the URL to the client.
-		 * 
+		 *
 		 * @return The URL to the client.
 		 */
 		public URL getClientUrl() {
 			return clientUrl;
 		}
 	}
-	
+
 	/**
 	 * The HTTP callback request that was initialized after a user responded to
 	 * an authorization request.
@@ -146,17 +146,17 @@ public class AuthorizeDomainRequest extends Request<URL> {
 	 * The state as supplied by the client.
 	 */
 	private final State state;
-	
+
 	/**
 	 * Creates a request to handle an authorization response from an external
 	 * party.
-	 * 
+	 *
 	 * @param httpRequest
 	 *        The HTTP callback request from an external party.
-	 * 
+	 *
 	 * @param state
 	 *        The state as provided by the client.
-	 * 
+	 *
 	 * @throws OmhException
 	 *         A parameter was invalid.
 	 */
@@ -164,7 +164,7 @@ public class AuthorizeDomainRequest extends Request<URL> {
 		final HttpServletRequest httpRequest,
 		final String state)
 		throws OmhException {
-		
+
 		// Validate the code.
 		if(httpRequest == null) {
 			throw new OmhException("The HTTP request is null.");
@@ -172,7 +172,7 @@ public class AuthorizeDomainRequest extends Request<URL> {
 		else {
 			this.httpRequest = httpRequest;
 		}
-		
+
 		// Validate the state.
 		if(state == null) {
 			throw new OmhException("The state is null.");
@@ -214,7 +214,7 @@ public class AuthorizeDomainRequest extends Request<URL> {
 			ExternalAuthorizationInformationBin
 				.getInstance()
 				.getInformation(state.getAuthorizeId());
-		
+
 		// Ensure that the client did use a known authorize ID.
 		if(information == null) {
 			throw new OmhException("The authorize ID is unknown.");
@@ -222,25 +222,25 @@ public class AuthorizeDomainRequest extends Request<URL> {
 
 		// Get the Shim.
 		Shim shim = ShimRegistry.getShim(information.getDomain());
-		
+
 		// Create a new token.
 		ExternalAuthorizationToken token =
 			shim.getAuthorizationImplementation()
 				.getAuthorizationToken(httpRequest, information);
-		
+
 		// Store the token.
         ExternalAuthorizationTokenBin.getInstance().storeToken(token);
-		
+
 		// Redirect the user.
-        setData(state.clientUrl);
+        setData(state.clientUrl.toString());
 	}
-	
+
 	/**
 	 * Builds a URL for this request based on the incoming request.
-	 * 
+	 *
 	 * @param httpRequest
 	 *        The incoming HTTP request.
-	 * 
+	 *
 	 * @return A String representing the URL for this request.
 	 */
 	public static String buildUrl(final HttpServletRequest httpRequest) {
