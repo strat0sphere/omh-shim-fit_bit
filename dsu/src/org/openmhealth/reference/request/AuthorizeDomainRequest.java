@@ -1,7 +1,8 @@
 package org.openmhealth.reference.request;
 
-import java.io.IOException;
-import java.net.URL;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -13,13 +14,6 @@ import org.openmhealth.reference.exception.OmhException;
 import org.openmhealth.reference.servlet.Version1;
 import org.openmhealth.shim.Shim;
 import org.openmhealth.shim.ShimRegistry;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * <p>
@@ -36,116 +30,15 @@ public class AuthorizeDomainRequest extends Request<String> {
 	public static final String PATH = "/auth/oauth/external_authorization";
 
 	/**
-	 * <p>
-	 * The expected state that should be supplied by the client after
-	 * redirecting a user to authorize Open mHealth to read an external party's
-	 * data for that user.
-	 * </p>
-	 *
-	 * @author John Jenkins
-	 */
-	@JsonIgnoreProperties(ignoreUnknown = true)
-	public static class State {
-		/**
-		 * The JSON key for the authorize ID.
-		 */
-		public static final String JSON_KEY_AUTHORIZE_ID = "authorize_id";
-		/**
-		 * The JSON key for the client's URL.
-		 */
-		public static final String JSON_KEY_CLIENT_URL =
-			"client_url";
-
-		/**
-		 * The ID that was given to the client when it asked about whether or
-		 * not a user had authorized Open mHealth to read data from an external
-		 * party. This should correlate with
-		 * {@link ExternalAuthorizationInformation#JSON_KEY_AUTHORIZE_ID}.
-		 */
-		@JsonProperty(JSON_KEY_AUTHORIZE_ID)
-		private final String authorizeId;
-		/**
-		 * The client-supplied URL for us to use to redirect the user back to
-		 * the client.
-		 */
-		@JsonProperty(JSON_KEY_CLIENT_URL)
-		private final URL clientUrl;
-
-		/**
-		 * Creates a new State object.
-		 *
-		 * @param authorizeId
-		 *        The ID that was given to the client when it asked if the user
-		 *        had authorized Open mHealth to read their data from an
-		 *        external entity. This should correlate with
-		 *        {@link ExternalAuthorizationInformation#JSON_KEY_AUTHORIZE_ID}
-		 *        .
-		 *
-		 * @param clientUrl
-		 *        The URL to use to redirect the user back to the client.
-		 *
-		 * @throws OmhException
-		 *         A parameter was invalid.
-		 */
-		@JsonCreator
-		public State(
-			@JsonProperty(JSON_KEY_AUTHORIZE_ID)
-				final String authorizeId,
-			@JsonProperty(JSON_KEY_CLIENT_URL)
-				final URL clientUrl)
-			throws OmhException {
-
-			// Validate the authorize ID.
-			if(authorizeId == null) {
-				throw new OmhException("The authorize ID is null.");
-			}
-			else {
-				this.authorizeId = authorizeId;
-			}
-
-			// Validate the client URL.
-			if(clientUrl == null) {
-				throw new OmhException("The client URL is null.");
-			}
-			else {
-				this.clientUrl = clientUrl;
-			}
-		}
-
-		/**
-		 * Returns the ID that was given to the client when it asked if the
-		 * user had authorized Open mHealth to read their data from an external
-		 * entity.
-		 *
-		 * @return The ID that was given to the client when it asked if the
-		 *         user had authorized Open mHealth to read their data from an
-		 *         external entity.
-		 *
-		 * @see ExternalAuthorizationInformation#JSON_KEY_AUTHORIZE_ID
-		 */
-		public String getAuthorizeId() {
-			return authorizeId;
-		}
-
-		/**
-		 * Returns the URL to the client.
-		 *
-		 * @return The URL to the client.
-		 */
-		public URL getClientUrl() {
-			return clientUrl;
-		}
-	}
-
-	/**
 	 * The HTTP callback request that was initialized after a user responded to
 	 * an authorization request.
 	 */
 	private final HttpServletRequest httpRequest;
 	/**
-	 * The state as supplied by the client.
+	 * The authorize ID to use to retrieve the
+	 * {@link ExternalAuthorizationInformation} object.
 	 */
-	private final State state;
+	private final String authorizeId;
 
 	/**
 	 * Creates a request to handle an authorization response from an external
@@ -178,19 +71,7 @@ public class AuthorizeDomainRequest extends Request<String> {
 			throw new OmhException("The state is null.");
 		}
 		else {
-			try {
-				this.state =
-					(new ObjectMapper()).readValue(state, State.class);
-			}
-			catch(JsonParseException e) {
-				throw new OmhException("The state was not valid JSON.", e);
-			}
-			catch(JsonMappingException e) {
-				throw new OmhException("The state was invalid.", e);
-			}
-			catch(IOException e) {
-				throw new OmhException("Could not read the state.", e);
-			}
+		    authorizeId = state;
 		}
 	}
 
@@ -213,7 +94,7 @@ public class AuthorizeDomainRequest extends Request<String> {
 		ExternalAuthorizationInformation information =
 			ExternalAuthorizationInformationBin
 				.getInstance()
-				.getInformation(state.getAuthorizeId());
+				.getInformation(authorizeId);
 
 		// Ensure that the client did use a known authorize ID.
 		if(information == null) {
@@ -232,18 +113,56 @@ public class AuthorizeDomainRequest extends Request<String> {
         ExternalAuthorizationTokenBin.getInstance().storeToken(token);
 
 		// Redirect the user.
-        setData(state.clientUrl.toString());
+        setData(information.getClientRedirectUrl().toString());
 	}
 
 	/**
-	 * Builds a URL for this request based on the incoming request.
-	 *
-	 * @param httpRequest
-	 *        The incoming HTTP request.
-	 *
-	 * @return A String representing the URL for this request.
-	 */
-	public static String buildUrl(final HttpServletRequest httpRequest) {
-		return Version1.buildRootUrl(httpRequest) + Version1.PATH + PATH;
+     * Builds a URL for this request based on the incoming request.
+     *
+     * @param httpRequest
+     *        The incoming HTTP request.
+     *
+     * @param parameters
+     *        Additional parameters that should be attached to the URL. This
+     *        may be null to indicate that no parameters should be added.
+     *
+     * @return A String representing the URL for this request.
+     */
+	public static String buildUrl(
+	    final HttpServletRequest httpRequest,
+	    final Map<String, String> parameters) {
+
+	    // Build the base URL.
+	    String result =
+	        Version1.buildRootUrl(httpRequest) + Version1.PATH + PATH;
+
+	    // If parameters were given, add them.
+	    if(parameters != null) {
+	        boolean firstPass = true;
+	        for(String key : parameters.keySet()) {
+	            if(firstPass) {
+	                result += "?";
+	                firstPass = false;
+	            }
+	            else {
+	                result += "&";
+	            }
+
+	            try {
+                    result += URLEncoder.encode(key, "UTF-8");
+                    result += "=";
+                    result += URLEncoder.encode(parameters.get(key), "UTF-8");
+                }
+                catch(UnsupportedEncodingException e) {
+                    throw
+                        new IllegalStateException(
+                            "'UTF-8' is an unknown encoding.",
+                            e);
+                }
+	        }
+	    }
+
+	    // Return the result.
+		return result;
 	}
 }

@@ -1,5 +1,8 @@
 package org.openmhealth.reference.request;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.openmhealth.reference.data.ExternalAuthorizationInformationBin;
@@ -22,12 +25,12 @@ import org.openmhealth.shim.authorization.ShimAuthorization;
  */
 public class UserAuthorizedDomainRequest
 	extends Request<ExternalAuthorizationInformation> {
-	
+
 	/**
 	 * The path to this request's API.
 	 */
 	public static final String PATH = "auth/authorized";
-	
+
 	/**
 	 * The authentication token from the request.
 	 */
@@ -37,48 +40,69 @@ public class UserAuthorizedDomainRequest
 	 */
 	private final String domain;
 	/**
+	 * The URL to use to redirect the client after the authorization flow has
+	 * completed.
+	 */
+	private final URL clientRedirectUrl;
+	/**
 	 * The HTTP request that started this flow.
 	 */
 	private final HttpServletRequest httpRequest;
-	
+
 	/**
 	 * Creates a request to determine if a user has authorized this server to
 	 * read their data from some domain.
-	 * 
+	 *
 	 * @param authToken
 	 *        The user's authentication token.
-	 * 
+	 *
 	 * @param domain
 	 *        The domain for which authorization is in question.
-	 * 
+	 *
 	 * @param httpRequest
 	 *        The HTTP request from the client that is attempting to determine
 	 *        if the user has already authorized Open mHealth to read from this
 	 *        domain.
-	 * 
+	 *
 	 * @throws OmhException
 	 *         One or more parameters were invalid.
 	 */
 	public UserAuthorizedDomainRequest(
 		final AuthenticationToken authToken,
 		final String domain,
+		final String redirectUrl,
 		final HttpServletRequest httpRequest)
 		throws OmhException {
-		
+
 		if(authToken == null) {
 			throw new OmhException("The authentication token is missing.");
 		}
 		else {
 			this.authToken = authToken;
 		}
-		
+
 		if(domain == null) {
 			throw new OmhException("The domain is missing.");
 		}
 		else {
 			this.domain = domain;
 		}
-		
+
+		if(redirectUrl == null) {
+		    throw new OmhException("The client's redirect URL is missing.");
+		}
+		else {
+		    try {
+                clientRedirectUrl = new URL(redirectUrl);
+            }
+            catch(MalformedURLException e) {
+                throw
+                    new OmhException(
+                        "The client's redirect URL is not a valid URL.",
+                        e);
+            }
+		}
+
 		if(httpRequest == null) {
 			throw new OmhException("The HTTP request is missing.");
 		}
@@ -100,27 +124,27 @@ public class UserAuthorizedDomainRequest
 		else {
 			setServiced();
 		}
-		
+
 		// First, ensure that the domain is known.
 		if(! ShimRegistry.hasDomain(domain)) {
 			throw new OmhException("The domain is unknown.");
 		}
-		
+
 		// Attempt to get the latest token for the user in the domain.
 		ExternalAuthorizationToken token =
 			ExternalAuthorizationTokenBin
 				.getInstance()
 				.getToken(authToken.getUsername(), domain);
-		
+
 		// If no such token exists, add the URL to the response.
 		if(token == null) {
 			// Get the shim.
 			Shim shim = ShimRegistry.getShim(domain);
-			
+
 			// Get the shim's authorization implementation.
 			ShimAuthorization authorization =
 				shim.getAuthorizationImplementation();
-			
+
 			// Use the implementation to generate information about how to
 			// request a new token.
 			ExternalAuthorizationInformation information =
@@ -128,13 +152,14 @@ public class UserAuthorizedDomainRequest
 					.getAuthorizationInformation(
 						shim,
 						authToken.getUsername(),
+						clientRedirectUrl,
 						httpRequest);
-			
+
 			// Store the object.
 			ExternalAuthorizationInformationBin
 				.getInstance()
 				.storeInformation(information);
-			
+
 			// Set this request's data to the object.
 			setData(information);
 		}

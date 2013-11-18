@@ -66,7 +66,7 @@ public class ExternalAuthorizationInformation implements OmhObject {
 	/**
 	 * The JSON key for the custom headers.
 	 */
-	public static final String JSON_KEY_HEADERS = "headers";
+	public static final String JSON_KEY_CLIENT_REDIRECT_URL = "client_redirect_url";
 	/**
 	 * The JSON key for the creation date.
 	 */
@@ -111,10 +111,11 @@ public class ExternalAuthorizationInformation implements OmhObject {
 	private final URL url;
 
 	/**
-	 * Additional headers that should be attached to the redirect.
+	 * The URL to use to redirect the user back to the client after the
+	 * authorization flow is complete.
 	 */
-	@JsonProperty(JSON_KEY_HEADERS)
-	private final Map<String, String> headers;
+	@JsonProperty(JSON_KEY_CLIENT_REDIRECT_URL)
+	private final URL clientRedirectUrl;
 
 	/**
 	 * The date-time in Unix milliseconds when this object was created.
@@ -123,43 +124,45 @@ public class ExternalAuthorizationInformation implements OmhObject {
 	private final long creationDate;
 
 	/**
-	 * Creates a new set of external authorization information. This should be
-	 * used when a user may be creating a new authorization request.
-	 *
-	 * @param username
-	 *        The user-name of the Open mHealth user that may be making the
-	 *        request.
-	 *
-	 * @param domain
-	 *        The domain to which the request will be made.
-	 *
-	 * @param url
-	 *        The URL to which the request should be made for the domain.
-	 *
-	 * @param headers
-	 *        Additional headers that should be attached to the redirect.
-	 *
-	 * @param preAuthState
-	 *        Values that may be set before the authorization is presented to
-	 *        the user. These will be retained-server side and never sent.
-	 *
-	 * @throws OmhException
-	 *         A parameter was invalid.
-	 */
+     * Creates a new set of external authorization information. This should be
+     * used when a user may be creating a new authorization request.
+     *
+     * @param username
+     *        The user-name of the Open mHealth user that may be making the
+     *        request.
+     *
+     * @param domain
+     *        The domain to which the request will be made.
+     *
+     * @param url
+     *        The URL to which the request should be made for the domain.
+     *
+     * @param clientRedirectUrl
+     *        The URL to use to redirect the user back to the client after the
+     *        authorization flow has completed.
+     *
+     * @param preAuthState
+     *        Values that may be set before the authorization is presented to
+     *        the user. These will be retained-server side and never sent.
+     *
+     * @throws OmhException
+     *         A parameter was invalid.
+     */
 	public ExternalAuthorizationInformation(
 		final String username,
 		final String domain,
+		final String authorizeId,
 		final URL url,
-		final Map<String, String> headers,
+		final URL clientRedirectUrl,
 		final Map<String, Object> preAuthState)
 		throws OmhException {
 
 		this(
 			username,
 			domain,
-			UUID.randomUUID().toString(),
+			authorizeId,
 			url,
-			headers,
+			clientRedirectUrl,
 			preAuthState,
 			System.currentTimeMillis());
 	}
@@ -180,9 +183,10 @@ public class ExternalAuthorizationInformation implements OmhObject {
 	 *
 	 * @param url
 	 *        The URL to which the request should be made for the domain.
-	 *
-	 * @param headers
-	 *        Additional headers that should be attached to the redirect.
+     *
+     * @param clientRedirectUrl
+     *        The URL to use to redirect the user back to the client after the
+     *        authorization flow has completed.
 	 *
 	 * @param preAuthState
 	 *        Values that may be set before the authorization is presented to
@@ -200,7 +204,8 @@ public class ExternalAuthorizationInformation implements OmhObject {
 		@JsonProperty(JSON_KEY_DOMAIN) final String domain,
 		@JsonProperty(JSON_KEY_AUTHORIZE_ID) final String authorizeId,
 		@JsonProperty(JSON_KEY_URL) final URL url,
-		@JsonProperty(JSON_KEY_HEADERS) final Map<String, String> headers,
+		@JsonProperty(JSON_KEY_CLIENT_REDIRECT_URL)
+		    final URL clientRedirectUrl,
 		@JsonProperty(JSON_KEY_PRE_AUTH_STATE)
 			final Map<String, Object> preAuthState,
 		@JsonProperty(JSON_KEY_CREATION_DATE) final long creationDate)
@@ -223,10 +228,7 @@ public class ExternalAuthorizationInformation implements OmhObject {
 		this.domain = domain;
 		this.authorizeId = authorizeId;
 		this.url = url;
-		this.headers =
-			(headers == null) ?
-				Collections.<String, String>emptyMap() :
-				Collections.unmodifiableMap(headers);
+		this.clientRedirectUrl = clientRedirectUrl;
 		this.preAuthState =
 			(preAuthState == null) ?
 				Collections.<String, Object>emptyMap() :
@@ -270,13 +272,15 @@ public class ExternalAuthorizationInformation implements OmhObject {
 		return url;
 	}
 
-	/**
-	 * Returns the request token, however it may be null.
-	 *
-	 * @return The request token, which may be null.
-	 */
-	public Map<String, String> getHeaders() {
-		return headers;
+    /**
+     * Returns the URL to use to redirect the user back to the client after the
+     * authorization flow has completed.
+     *
+     * @return The URL to use to redirect the user back to the client after the
+     *         authorization flow has completed.
+     */
+	public URL getClientRedirectUrl() {
+	    return clientRedirectUrl;
 	}
 
 	/**
@@ -299,5 +303,15 @@ public class ExternalAuthorizationInformation implements OmhObject {
 	 */
 	public long getCreationDate() {
 		return creationDate;
+	}
+
+	/**
+	 * Generates and returns a new, random authorize ID. This should be used to
+	 * create IDs that will be used to construct these objects.
+	 *
+	 * @return A new, random authorize ID.
+	 */
+	public static String getNewAuthorizeId() {
+	    return UUID.randomUUID().toString();
 	}
 }

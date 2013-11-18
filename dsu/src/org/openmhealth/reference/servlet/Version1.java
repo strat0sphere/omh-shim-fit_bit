@@ -122,6 +122,10 @@ public class Version1 {
 	 * to grant access to a third-party.
 	 */
 	public static final String PARAM_AUTHORIZATION_CODE = "code";
+	/**
+	 * The key for the state parameter in the OAuth flow.
+	 */
+	public static final String PARAM_AUTHORIZATION_STATE = "state";
 
 	/**
 	 * The parameter for the number of records to skip in requests that use
@@ -1097,10 +1101,15 @@ public class Version1 {
 		value = UserAuthorizedDomainRequest.PATH,
 		method = RequestMethod.GET)
 	public @ResponseBody ExternalAuthorizationInformation userAuthorizedDomain(
-		@RequestParam(
-			value = ExternalAuthorizationToken.JSON_KEY_DOMAIN,
-			required = true)
-			final String domain,
+        @RequestParam(
+            value = ExternalAuthorizationToken.JSON_KEY_DOMAIN,
+            required = true)
+            final String domain,
+        @RequestParam(
+            value =
+                ExternalAuthorizationInformation.JSON_KEY_CLIENT_REDIRECT_URL,
+            required = true)
+            final String clientRedirectUrl,
 		final HttpServletRequest request,
 		final HttpServletResponse response) {
 
@@ -1115,7 +1124,11 @@ public class Version1 {
 			handleRequest(
 				request,
 				response,
-				new UserAuthorizedDomainRequest(authToken, domain, request));
+				new UserAuthorizedDomainRequest(
+				    authToken,
+				    domain,
+				    clientRedirectUrl,
+				    request));
 	}
 
 	/**

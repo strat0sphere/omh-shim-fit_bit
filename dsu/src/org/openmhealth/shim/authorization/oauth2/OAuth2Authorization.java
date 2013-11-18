@@ -122,12 +122,13 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 
 	/*
 	 * (non-Javadoc)
-	 * @see org.openmhealth.shim.authorization.ShimAuthorization#getAuthorizationInformation(org.openmhealth.shim.Shim, java.lang.String, javax.servlet.http.HttpServletRequest)
+	 * @see org.openmhealth.shim.authorization.ShimAuthorization#getAuthorizationInformation(org.openmhealth.shim.Shim, java.lang.String, java.net.URL, javax.servlet.http.HttpServletRequest)
 	 */
 	@Override
 	public ExternalAuthorizationInformation getAuthorizationInformation(
 		final Shim shim,
 		final String username,
+		final URL clientRedirectUri,
 		final HttpServletRequest request)
 		throws IllegalArgumentException {
 
@@ -154,7 +155,7 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
                     "&redirect_uri=" +
                         URLEncoder
                             .encode(
-                                AuthorizeDomainRequest.buildUrl(request),
+                                AuthorizeDomainRequest.buildUrl(request, null),
                                 "UTF-8"));
         }
         catch(UnsupportedEncodingException e) {
@@ -175,8 +176,9 @@ public abstract class OAuth2Authorization implements ShimAuthorization {
 			new ExternalAuthorizationInformation(
 				username,
 				domain,
+				ExternalAuthorizationInformation.getNewAuthorizeId(),
 				authorizeUrl,
-				null,
+				clientRedirectUri,
 				null);
 	}
 
