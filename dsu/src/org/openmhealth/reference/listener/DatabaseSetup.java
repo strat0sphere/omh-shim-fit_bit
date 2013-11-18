@@ -1,12 +1,12 @@
 /*******************************************************************************
  * Copyright 2013 Open mHealth
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *   http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,12 +29,12 @@ import org.openmhealth.reference.data.Dao;
  * <p>
  * Sets up the database.
  * </p>
- * 
+ *
  * <p>
  * This must be called after the {@link ConfigurationFileImport} listener to
  * ensure that specialized configuration options have been accounted for.
  * </p>
- * 
+ *
  * @author John Jenkins
  */
 public class DatabaseSetup implements ServletContextListener {
@@ -43,17 +43,17 @@ public class DatabaseSetup implements ServletContextListener {
 	 */
 	private static final Logger LOGGER =
 		Logger.getLogger(DatabaseSetup.class.getName());
-	
+
 	/**
 	 * The key that denotes which DAO class to use.
 	 */
 	public static final String PROPERTY_KEY_DATABASE_CLASS = "db.class";
-	
+
 	/**
 	 * The DAO object to use to control the connection to the database.
 	 */
 	private Dao dao = null;
-	
+
 	/**
 	 * Default constructor.
 	 */
@@ -68,9 +68,9 @@ public class DatabaseSetup implements ServletContextListener {
 	@Override
 	public void contextInitialized(final ServletContextEvent event) {
 		LOGGER.info("Setting up the DAO.");
-		
+
 		// Get the properties.
-		Properties properties = ConfigurationFileImport.getCustomProperties();
+		Properties properties = System.getProperties();
 		// If the database class property is missing, this is a critical error.
 		if(! properties.containsKey(PROPERTY_KEY_DATABASE_CLASS)) {
 			LOGGER
@@ -83,7 +83,7 @@ public class DatabaseSetup implements ServletContextListener {
 					"The database class is missing from the properties: " +
 						PROPERTY_KEY_DATABASE_CLASS);
 		}
-		
+
 		// Get the class string.
 		String daoClassString =
 			properties.getProperty(PROPERTY_KEY_DATABASE_CLASS);
@@ -105,7 +105,7 @@ public class DatabaseSetup implements ServletContextListener {
 			IllegalAccessException |
 			InvocationTargetException
 			e) {
-			
+
 			LOGGER
 				.log(
 					Level.SEVERE,
