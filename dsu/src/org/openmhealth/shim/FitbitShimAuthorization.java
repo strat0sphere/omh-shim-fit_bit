@@ -8,9 +8,9 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
-import org.openmhealth.reference.exception.OmhException;
 import org.openmhealth.reference.domain.ExternalAuthorizationInformation;
 import org.openmhealth.reference.domain.ExternalAuthorizationToken;
+import org.openmhealth.reference.exception.OmhException;
 import org.openmhealth.reference.request.AuthorizeDomainRequest;
 import org.openmhealth.reference.servlet.Version1;
 import org.openmhealth.shim.Shim;
@@ -29,34 +29,16 @@ public class FitbitShimAuthorization implements ShimAuthorization {
 	public ExternalAuthorizationInformation getAuthorizationInformation(
 		final Shim shim,
 		final String username,
+		final URL clientRedirectUrl,
 		final HttpServletRequest request) {
-        ExternalAuthorizationInformation info =
-            new ExternalAuthorizationInformation(
-                username, shim.getDomain(), null, null, null);
-
         FitbitShim fitbitShim = (FitbitShim)shim;
 
-        Map<String, Object> stateMap = new HashMap<String, Object>();
-        stateMap.put(
-            AuthorizeDomainRequest.State.JSON_KEY_AUTHORIZE_ID, 
-            info.getAuthorizeId());
-        stateMap.put(
-            AuthorizeDomainRequest.State.JSON_KEY_CLIENT_URL, 
-            "http://openmhealth.org/");
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        String stateJson = objectMapper.valueToTree(stateMap).toString();
-        String encodedState = null;
-        try {
-            encodedState = URLEncoder.encode(stateJson, "UTF-8");
-        } 
-        catch(UnsupportedEncodingException e) {
-            throw new OmhException("Encoding error", e);
-        }
-
-        String callbackUrl = 
-            AuthorizeDomainRequest.buildUrl(request) 
-            + "?state=" + encodedState;
+		String authorizeId =
+		    ExternalAuthorizationInformation.getNewAuthorizeId();
+		Map<String, String> parameters = new HashMap<String, String>();
+		parameters.put(Version1.PARAM_AUTHORIZATION_STATE, authorizeId);
+		String callbackUrl =
+		    AuthorizeDomainRequest.buildUrl(request, parameters);
 
         LocalUserDetail localUserDetail = new LocalUserDetail(username);
         String authorizationUrlString = null;
@@ -78,17 +60,21 @@ public class FitbitShimAuthorization implements ShimAuthorization {
             throw new OmhException("The authorization URL is invalid.", e);
         }
 
-        info.setUrl(authorizationUrl);
-
         Map<String, Object> preAuthState = new HashMap<String, Object>();
         preAuthState.put(
             OAuth1Authorization.KEY_EXTRAS_SECRET,
             fitbitShim.getCredentialsCache()
                 .getResourceCredentials(localUserDetail)
                 .getTempTokenSecret());
-        info.setPreAuthState(preAuthState);
 
-        return info;
+		return
+			new ExternalAuthorizationInformation(
+				username,
+				shim.getDomain(),
+				authorizeId,
+				authorizationUrl,
+				clientRedirectUrl,
+				preAuthState);
     }
 
 	public ExternalAuthorizationToken getAuthorizationToken(

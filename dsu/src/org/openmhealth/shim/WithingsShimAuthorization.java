@@ -41,30 +41,19 @@ public class WithingsShimAuthorization implements ShimAuthorization {
 	public ExternalAuthorizationInformation getAuthorizationInformation(
 		final Shim shim,
 		final String username,
+		final URL clientRedirectUrl,
 		final HttpServletRequest request) {
-        ExternalAuthorizationInformation info =
-            new ExternalAuthorizationInformation(
-                username, shim.getDomain(), null, null, null);
-
         WithingsShim withingsShim = (WithingsShim)shim;
 
-        // Build the callback URL.
-        Map<String, Object> stateMap = new HashMap<String, Object>();
-        stateMap.put(
-            AuthorizeDomainRequest.State.JSON_KEY_AUTHORIZE_ID, 
-            info.getAuthorizeId());
-        stateMap.put(
-            AuthorizeDomainRequest.State.JSON_KEY_CLIENT_URL, 
-            "http://openmhealth.org/");
-
-        ObjectMapper objectMapper = new ObjectMapper();
-        String stateJson = objectMapper.valueToTree(stateMap).toString();
-        String callbackUrl = null;
+		String authorizeId =
+		    ExternalAuthorizationInformation.getNewAuthorizeId();
+		Map<String, String> parameters = new HashMap<String, String>();
+		parameters.put(Version1.PARAM_AUTHORIZATION_STATE, authorizeId);
+		String callbackUrl = null;
         try {
             callbackUrl = 
                 URLEncoder.encode(
-                    AuthorizeDomainRequest.buildUrl(request) 
-                    + "?state=" + stateJson,
+                    AuthorizeDomainRequest.buildUrl(request, parameters),
                     "UTF-8");
         } 
         catch(UnsupportedEncodingException e) {
@@ -88,16 +77,22 @@ public class WithingsShimAuthorization implements ShimAuthorization {
         String secret = tokenParameters.get(OAuth.OAUTH_TOKEN_SECRET);
 
         // Fill in the redirect URL.
-        info.setUrl(
+        URL authorizeUrl =
             withingsShim.buildSignedUrl(
-                OAUTH_URL_PREFIX + "authorize", token, secret, null));
+                OAUTH_URL_PREFIX + "authorize", token, secret, null);
 
         // Save the request token secret.
         Map<String, Object> preAuthState = new HashMap<String, Object>();
         preAuthState.put(OAuth1Authorization.KEY_EXTRAS_SECRET, secret);
-        info.setPreAuthState(preAuthState);
 
-        return info;
+		return
+			new ExternalAuthorizationInformation(
+				username,
+				shim.getDomain(),
+				authorizeId,
+				authorizeUrl,
+				clientRedirectUrl,
+				preAuthState);
     }
 
 	public ExternalAuthorizationToken getAuthorizationToken(

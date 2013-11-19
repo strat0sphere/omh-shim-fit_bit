@@ -22,6 +22,7 @@ import org.openmhealth.reference.domain.Data;
 import org.openmhealth.reference.domain.ExternalAuthorizationToken;
 import org.openmhealth.reference.domain.MetaData;
 import org.openmhealth.reference.domain.Schema;
+import org.openmhealth.reference.exception.OmhException;
 import org.openmhealth.shim.authorization.ShimAuthorization;
 import org.openmhealth.shim.authorization.oauth1.OAuth1Authorization;
 import org.openmhealth.shim.exception.ShimDataException;
@@ -103,16 +104,24 @@ public class FitbitShim implements Shim {
     }
 
     public FitbitShim() {
-         apiClientService = 
-             new FitbitAPIClientService<FitbitApiClientAgent>(
-                 new FitbitApiClientAgent(
-                     "api.fitbit.com", "http://www.fitbit.com", 
-                     credentialsCache),
-                 ShimUtil.getShimProperty(DOMAIN, "clientId"),
-                 ShimUtil.getShimProperty(DOMAIN, "clientSecret"),
-                 credentialsCache,
-                 entityCache,
-                 subscriptionStore);
+        String clientId = System.getProperty(DOMAIN + ".clientId");
+        String clientSecret = System.getProperty(DOMAIN + ".clientSecret");
+        if (clientId == null || clientSecret == null) {
+            throw new OmhException(
+                DOMAIN + ".clientId and " + DOMAIN + ".clientSecret"
+                + " must be set in the properties file.");
+        }
+
+        apiClientService = 
+            new FitbitAPIClientService<FitbitApiClientAgent>(
+                new FitbitApiClientAgent(
+                    "api.fitbit.com", "http://www.fitbit.com", 
+                    credentialsCache),
+                clientId,
+                clientSecret,
+                credentialsCache,
+                entityCache,
+                subscriptionStore);
     }
 
     public FitbitAPIClientService<FitbitApiClientAgent> getApiClientService() {

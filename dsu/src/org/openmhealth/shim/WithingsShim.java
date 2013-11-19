@@ -19,6 +19,7 @@ import org.openmhealth.reference.domain.Data;
 import org.openmhealth.reference.domain.ExternalAuthorizationToken;
 import org.openmhealth.reference.domain.MetaData;
 import org.openmhealth.reference.domain.Schema;
+import org.openmhealth.reference.exception.OmhException;
 import org.openmhealth.shim.authorization.ShimAuthorization;
 import org.openmhealth.shim.authorization.oauth1.OAuth1Authorization;
 import org.openmhealth.shim.exception.ShimDataException;
@@ -319,10 +320,16 @@ public class WithingsShim implements Shim {
      * @return The OAuthConsumer.
      */
     private OAuthConsumer createOAuthConsumer() {
+        String clientId = System.getProperty(DOMAIN + ".clientId");
+        String clientSecret = System.getProperty(DOMAIN + ".clientSecret");
+        if (clientId == null || clientSecret == null) {
+            throw new OmhException(
+                DOMAIN + ".clientId and " + DOMAIN + ".clientSecret"
+                + " must be set in the properties file.");
+        }
+
         OAuthConsumer consumer =
-            new DefaultOAuthConsumer(
-                ShimUtil.getShimProperty(DOMAIN, "clientId"),
-                ShimUtil.getShimProperty(DOMAIN, "clientSecret"));
+            new DefaultOAuthConsumer(clientId, clientSecret);
         consumer.setSigningStrategy(new QueryStringSigningStrategy());
         return consumer;
     }

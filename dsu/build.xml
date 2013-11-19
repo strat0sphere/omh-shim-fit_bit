@@ -10,7 +10,6 @@
     <!-- Create the properties to be used throughout this build file. -->
     <property name="dist" location="dist" />
     <property name="build" location="build" />
-    <property name="config" location="config" />
     <property name="doc" location="${dist}/doc"/>
     <property name="doc-server" location="${doc}/server" />
     <property name="doc-library" location="${doc}/library" />
@@ -197,7 +196,6 @@
         	
             <classes dir="${build}/classes" />
             <classes dir="${schema}" prefix="WEB-INF/classes/schema" />
-            <classes dir="${config}" prefix="WEB-INF/classes/config" />
             <lib refid="dependencies.run" />
             <webinf dir="${web}/WEB-INF" />
             <metainf dir="${web}/META-INF" />

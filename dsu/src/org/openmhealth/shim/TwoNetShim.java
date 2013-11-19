@@ -196,12 +196,17 @@ public class TwoNetShim implements Shim {
     }
 
     public TwoNetShim() {
+        String key = System.getProperty(DOMAIN + ".key");
+        String secret = System.getProperty(DOMAIN + ".secret");
+        if (key == null || secret == null) {
+            throw new OmhException(
+                DOMAIN + ".key and " + DOMAIN + ".secret"
+                + " must be set in the properties file.");
+        }
+
         authorizationHeader =
-            "Basic " +
-            Base64.encodeBase64String(
-                (ShimUtil.getShimProperty(DOMAIN, "key")
-                 + ":"
-                 + ShimUtil.getShimProperty(DOMAIN, "secret")).getBytes());
+            "Basic " 
+            + Base64.encodeBase64String((key + ":" + secret).getBytes());
     }
 
     public String getDomain() {

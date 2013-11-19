@@ -163,50 +163,6 @@ public class ShimUtil {
     }
 
     /**
-     * Retrieves a shim config value from the associated properties file. For a
-     * shim with the domain 'fitbit', the properties file should be located on
-     * the classpath at 'config/fitbit.properties'.
-     *
-     * @param domain
-     *        The shim's domain.
-     *
-     * @param key
-     *        The key of the config value.
-     *
-     * @return The config value or null if it was not found.
-     */
-    public static String getShimProperty(
-        final String domain,
-        final String key) {
-        String propertiesResourcePath = "/config/" + domain + ".properties";
-        InputStream propertiesStream =
-            ShimUtil.class.getClassLoader()
-                .getResourceAsStream(propertiesResourcePath);
-
-        if (propertiesStream == null) {
-            throw new RuntimeException(
-                "Properties file '" + propertiesResourcePath + "' not found.");
-        }
-
-        String value = null;
-        try {
-            Properties properties = new Properties();
-            properties.load(propertiesStream);
-            value = properties.getProperty(key);
-        }
-        catch(IOException e) {
-        }
-
-        if (value == null) {
-            throw new RuntimeException(
-                "Unable to load value of '" + key + "' from properties file '" 
-                + propertiesResourcePath + "'.");
-        }
-
-        return value;
-    }
-
-    /**
      * Fetches a URL.
      *
      * @param url

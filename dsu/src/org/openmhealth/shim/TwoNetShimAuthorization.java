@@ -43,30 +43,21 @@ public class TwoNetShimAuthorization implements ShimAuthorization {
 	public ExternalAuthorizationInformation getAuthorizationInformation(
 		final Shim shim,
 		final String username,
+		final URL clientRedirectUrl,
 		final HttpServletRequest request) {
-        ExternalAuthorizationInformation info =
-            new ExternalAuthorizationInformation(
-                username, shim.getDomain(), null, null, null);
-
         TwoNetShim twoNetShim = (TwoNetShim)shim;
 
         // Build the redirect URL. Since this whole auth flow is faked, we're
         // going to redirect directly to the callback URL.
-        Map<String, Object> stateMap = new HashMap<String, Object>();
-        stateMap.put(
-            AuthorizeDomainRequest.State.JSON_KEY_AUTHORIZE_ID, 
-            info.getAuthorizeId());
-        stateMap.put(
-            AuthorizeDomainRequest.State.JSON_KEY_CLIENT_URL, 
-            "http://openmhealth.org/");
-        ObjectMapper objectMapper = new ObjectMapper();
-        String stateJson = objectMapper.valueToTree(stateMap).toString();
+		String authorizeId =
+		    ExternalAuthorizationInformation.getNewAuthorizeId();
+		Map<String, String> parameters = new HashMap<String, String>();
+		parameters.put(Version1.PARAM_AUTHORIZATION_STATE, authorizeId);
         URL redirectUrl = null;
         try {
             redirectUrl =
                 new URL(
-                    AuthorizeDomainRequest.buildUrl(request) 
-                    + "?state=" + stateJson);
+                    AuthorizeDomainRequest.buildUrl(request, parameters));
         }
         catch(MalformedURLException e) {
             throw new OmhException("Error creating redirect URL", e);
@@ -100,9 +91,14 @@ public class TwoNetShimAuthorization implements ShimAuthorization {
             twoNetShim.registerDevice(
                 userGuid, "Asthmapolis", "Rev B", "2NET00005"));
 
-        info.setUrl(redirectUrl);
-        info.setPreAuthState(preAuthState);
-        return info;
+		return
+			new ExternalAuthorizationInformation(
+				username,
+				shim.getDomain(),
+				authorizeId,
+                redirectUrl,
+				clientRedirectUrl,
+				preAuthState);
     }
 
 	public ExternalAuthorizationToken getAuthorizationToken(
