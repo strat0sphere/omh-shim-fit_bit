@@ -306,18 +306,33 @@ public class FitbitShim implements Shim {
         DataType dataType = getDataType(schemaId);
 
         // Fetch the data.
-        Object value = 
-            dataType.getFetcher().dataForDay(
-                apiClientService, localUserDetail, startDate, 
-                dataType.getField());
-        Map<String, Object> outputDatum = new HashMap<String, Object>();
-        outputDatum.put(dataTypeString, value);
+        List<Data> outputData = new ArrayList<Data>();
+        DateTime dateToFetch = null;
+        if (endDate == null) {
+            dateToFetch = DateTime.now();
+        } else {
+            dateToFetch = endDate;
+        }
+        dateToFetch = 
+            dateToFetch.withTime(0, 0, 0, 0).minusDays(numToSkip.intValue());
+        for(; outputData.size() < numToReturn 
+              && (startDate == null || dateToFetch.compareTo(startDate) > 0)
+            ; dateToFetch = dateToFetch.minusDays(1)) {
+            Object value = 
+                dataType.getFetcher().dataForDay(
+                    apiClientService, localUserDetail, dateToFetch, 
+                    dataType.getField());
+            Map<String, Object> outputDatum = new HashMap<String, Object>();
+            outputDatum.put(dataTypeString, value);
 
-        return Arrays.asList(
-            new Data(
-                token.getUsername(), schemaId, version,
-                new MetaData(null, startDate),
-                ShimUtil.objectToJsonNode(outputDatum)));
+            outputData.add(
+                new Data(
+                    token.getUsername(), schemaId, version,
+                    new MetaData(null, dateToFetch),
+                    ShimUtil.objectToJsonNode(outputDatum)));
+        }
+
+        return outputData;
     }
 
     private static Object activityForDay(
