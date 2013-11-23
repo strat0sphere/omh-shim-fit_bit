@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import name.jenkins.paul.john.concordia.Concordia;
@@ -71,36 +72,130 @@ public class FitbitShim implements Shim {
      * DataFetcher will be defined for each supported domain.
      */
     private interface DataFetcher {
-        public Map<String, Object> dataForDay(
+        public Object dataForDay(
             FitbitAPIClientService<FitbitApiClientAgent> client,
-            LocalUserDetail localUserDetail, DateTime date);
+            LocalUserDetail localUserDetail, DateTime date,
+            DataType.Field field);
+    }
+
+    private static final DataFetcher activitiesFetcher =
+        new DataFetcher() {
+            public Object dataForDay(
+                FitbitAPIClientService<FitbitApiClientAgent> client,
+                LocalUserDetail localUserDetail, DateTime date,
+                DataType.Field field) {
+                return activityForDay(client, localUserDetail, date, field);
+            }
+        };
+    
+    private static final DataFetcher sleepFetcher =
+        new DataFetcher() {
+            public Object dataForDay(
+                FitbitAPIClientService<FitbitApiClientAgent> client,
+                LocalUserDetail localUserDetail, DateTime date,
+                DataType.Field field) {
+                return sleepForDay(client, localUserDetail, date, field);
+            }
+        };
+
+    /**
+     * Class to represent how to extract a given type of data point from the
+     * Fitbit API.
+     */
+    private static class DataType {
+        public enum Field {
+            // Activities
+            CALORIES,
+            STEPS,
+            DISTANCE,
+            FLOORS,
+            ELEVATION,
+            SEDENTARY_MINUTES,
+            LIGHTLY_ACTIVE_MINUTES,
+            FAIRLY_ACTIVE_MINUTES,
+            VERY_ACTIVE_MINUTES,
+            ACTIVITY_CALORIES,
+
+            // Sleep
+            TIME_ASLEEP,
+            TIME_IN_BED,
+        }
+
+        private final DataFetcher fetcher;
+        private final Field field;
+
+        /**
+         * @param fetcher
+         *        The DataFetcher used to retrieve the data.
+         *
+         * @param field
+         *        The individual field to extract from the data.
+         */
+        public DataType(
+            DataFetcher fetcher, 
+            Field field) {
+            if (fetcher == null) {
+                throw new OmhException("The fetcher is null.");
+            }
+            if (field == null) {
+                throw new OmhException("The field is null.");
+            }
+
+            this.fetcher = fetcher;
+            this.field = field;
+        }
+
+        public DataFetcher getFetcher() { return fetcher; }
+        public Field getField() { return field; }
     }
 
     /**
-     * Maps schemaID to DataFetcher for each supported domain.
+     * Maps schema IDs to DataType objects.
      */
-    private static Map<String, DataFetcher> dataFetcherMap = 
-        new HashMap<String, DataFetcher>();
+    private static Map<String, DataType> dataTypeMap = 
+        new HashMap<String, DataType>();
     static {
-        dataFetcherMap.put(
-            "activity", 
-            new DataFetcher() {
-                public Map<String, Object> dataForDay(
-                    FitbitAPIClientService<FitbitApiClientAgent> client,
-                    LocalUserDetail localUserDetail, DateTime date) {
-                    return activityForDay(client, localUserDetail, date);
-                }
-            });
+        // Activities
+        dataTypeMap.put(
+            "calories", 
+            new DataType(activitiesFetcher, DataType.Field.CALORIES));
+        dataTypeMap.put(
+            "steps", 
+            new DataType(activitiesFetcher, DataType.Field.STEPS));
+        dataTypeMap.put(
+            "distance_mi", 
+            new DataType(activitiesFetcher, DataType.Field.DISTANCE));
+        dataTypeMap.put(
+            "floors", 
+            new DataType(activitiesFetcher, DataType.Field.FLOORS));
+        dataTypeMap.put(
+            "elevation_ft", 
+            new DataType(activitiesFetcher, DataType.Field.ELEVATION));
+        dataTypeMap.put(
+            "sedentary_minutes",
+            new DataType(activitiesFetcher, DataType.Field.SEDENTARY_MINUTES));
+        dataTypeMap.put(
+            "lightly_active_minutes", 
+            new DataType(
+                activitiesFetcher, DataType.Field.LIGHTLY_ACTIVE_MINUTES));
+        dataTypeMap.put(
+            "fairly_active_minutes", 
+            new DataType(
+                activitiesFetcher, DataType.Field.FAIRLY_ACTIVE_MINUTES));
+        dataTypeMap.put(
+            "very_active_minutes", 
+            new DataType(activitiesFetcher, DataType.Field.VERY_ACTIVE_MINUTES));
+        dataTypeMap.put(
+            "activity_calories", 
+            new DataType(activitiesFetcher, DataType.Field.ACTIVITY_CALORIES));
 
-        dataFetcherMap.put(
-            "sleep", 
-            new DataFetcher() {
-                public Map<String, Object> dataForDay(
-                    FitbitAPIClientService<FitbitApiClientAgent> client,
-                    LocalUserDetail localUserDetail, DateTime date) {
-                    return sleepForDay(client, localUserDetail, date);
-                }
-            });
+        // Sleep
+        dataTypeMap.put(
+            "time_asleep_minutes", 
+            new DataType(sleepFetcher, DataType.Field.TIME_ASLEEP));
+        dataTypeMap.put(
+            "time_in_bed_minutes", 
+            new DataType(sleepFetcher, DataType.Field.TIME_IN_BED));
     }
 
     public FitbitShim() {
@@ -122,6 +217,7 @@ public class FitbitShim implements Shim {
                 credentialsCache,
                 entityCache,
                 subscriptionStore);
+        apiClientService.getClient().setLocale(Locale.US);
     }
 
     public FitbitAPIClientService<FitbitApiClientAgent> getApiClientService() {
@@ -142,7 +238,7 @@ public class FitbitShim implements Shim {
 
 	public List<String> getSchemaIds() {
         List<String> schemaIds = new ArrayList<String>();
-        for (String key : dataFetcherMap.keySet()) {
+        for (String key : dataTypeMap.keySet()) {
             schemaIds.add(SCHEMA_PREFIX + key);
         }
         return schemaIds;
@@ -162,7 +258,14 @@ public class FitbitShim implements Shim {
 		final String id,
 		final Long version)
 		throws ShimSchemaException {
-        return ShimUtil.getSchema(id, version);
+        // We only have a version 1 for now, so return null for anything but 1.
+        if (!version.equals(1L)) {
+            return null;
+        }
+
+        DataType dataType = getDataType(id);
+
+        return ShimUtil.buildSchemaForSingleValue(id, version, null);
     }
 
 	public List<Data> getData(
@@ -192,41 +295,35 @@ public class FitbitShim implements Shim {
             token.<String>getExtra(OAuth1Authorization.KEY_EXTRAS_SECRET));
         credentialsCache.saveResourceCredentials(localUserDetail, credentials);
 
-        // Extract the data type and find the associated DataFetcher.
-        String dataType = null;
+        // Extract the data type and find the associated DataType.
+        String dataTypeString = null;
         try {
-            dataType = ShimUtil.dataTypeFromSchemaId(schemaId);
+            dataTypeString = ShimUtil.dataTypeFromSchemaId(schemaId);
         }
         catch(ShimSchemaException e) {
             throw new ShimDataException("Invalid schema id: " + schemaId, e);
         }
-        DataFetcher dataFetcher = dataFetcherMap.get(dataType);
-        if (dataFetcher == null) {
-            throw new ShimDataException("Unknown schema id: " + schemaId);
-        }
+        DataType dataType = getDataType(schemaId);
 
         // Fetch the data.
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode dataPoint = null;
-        try {
-            dataPoint = objectMapper.valueToTree(
-                dataFetcher.dataForDay(
-                    apiClientService, localUserDetail, startDate));
-        }
-        catch(Exception e) {
-            throw new ShimDataException("JSON encoding error", e);
-        }
+        Object value = 
+            dataType.getFetcher().dataForDay(
+                apiClientService, localUserDetail, startDate, 
+                dataType.getField());
+        Map<String, Object> outputDatum = new HashMap<String, Object>();
+        outputDatum.put(dataTypeString, value);
 
         return Arrays.asList(
             new Data(
                 token.getUsername(), schemaId, version,
                 new MetaData(null, startDate),
-                dataPoint));
+                ShimUtil.objectToJsonNode(outputDatum)));
     }
 
-    private static Map<String, Object> activityForDay(
+    private static Object activityForDay(
         FitbitAPIClientService<FitbitApiClientAgent> client,
-        LocalUserDetail localUserDetail, DateTime date) {
+        LocalUserDetail localUserDetail, DateTime date,
+        DataType.Field field) {
         // Fetch the data.
         ActivitiesSummary summary = null;
         try {
@@ -238,32 +335,54 @@ public class FitbitShim implements Shim {
             throw new ShimDataException("Fitbit API error", e);
         }
 
-        // Build the return data object.
-        Map<String, Object> data = new HashMap<String, Object>();
+        // Return the specific field.
+        switch(field) {
+            case CALORIES:
+                return summary.getCaloriesOut();
 
-        data.put("steps", summary.getSteps());
+            case STEPS:
+                return summary.getSteps();
 
-        data.put("calories_out", summary.getCaloriesOut());
+            case DISTANCE:
+                double distance = 0;
+                for(ActivityDistance d : summary.getDistances()) {
+                    if (d.getActivity().equals("total")) {
+                        distance = d.getDistance();
+                        break;
+                    }
+                }
+                return distance;
 
-        double distance = 0;
-        for(ActivityDistance d : summary.getDistances()) {
-            if (d.getActivity().equals("total")) {
-                distance = d.getDistance();
-                break;
-            }
+            case FLOORS:
+                return summary.getFloors();
+
+            case ELEVATION:
+                return summary.getElevation();
+
+            case SEDENTARY_MINUTES:
+                return summary.getSedentaryMinutes();
+
+            case LIGHTLY_ACTIVE_MINUTES:
+                return summary.getLightlyActiveMinutes();
+
+            case FAIRLY_ACTIVE_MINUTES:
+                return summary.getFairlyActiveMinutes();
+
+            case VERY_ACTIVE_MINUTES:
+                return summary.getVeryActiveMinutes();
+
+            case ACTIVITY_CALORIES:
+                return summary.getActivityCalories();
+
+            default:
+                throw new OmhException("Unknown activities Field");
         }
-        data.put("distance", distance);
-
-        if (summary.getFloors() != null) {
-            data.put("floors", summary.getFloors());
-        }
-
-        return data;
     }
 
-    private static Map<String, Object> sleepForDay(
+    private static Object sleepForDay(
         FitbitAPIClientService<FitbitApiClientAgent> client,
-        LocalUserDetail localUserDetail, DateTime date) {
+        LocalUserDetail localUserDetail, DateTime date,
+        DataType.Field field) {
         // Fetch the data.
         SleepSummary summary = null;
         try {
@@ -275,12 +394,41 @@ public class FitbitShim implements Shim {
             throw new ShimDataException("Fitbit API error", e);
         }
 
-        // Build the return data object.
-        Map<String, Object> data = new HashMap<String, Object>();
+        // Return the specific field.
+        switch(field) {
+            case TIME_ASLEEP:
+                return summary.getTotalMinutesAsleep();
 
-        data.put("minutes_asleep", summary.getTotalMinutesAsleep());
-        data.put("time_in_bed", summary.getTotalTimeInBed());
+            case TIME_IN_BED:
+                return summary.getTotalTimeInBed();
 
-        return data;
+            default:
+                throw new OmhException("Unknown sleep Field");
+        }
+    }
+
+    /**
+     * Look up the DataType associated with the given schema ID.
+     *
+     * @param schemaId
+     *        The schema ID.
+     *
+     * @return The associated DataType.
+     */
+    private DataType getDataType(final String schemaId) {
+        String dataTypeString = null;
+        try {
+            dataTypeString = ShimUtil.dataTypeFromSchemaId(schemaId);
+        }
+        catch(ShimSchemaException e) {
+            throw new ShimDataException("Invalid schema id: " + schemaId, e);
+        }
+
+        DataType dataType = dataTypeMap.get(dataTypeString);
+        if (dataType == null) {
+            throw new ShimDataException("Unknown schema id: " + schemaId);
+        }
+
+        return dataType;
     }
 }

@@ -144,7 +144,9 @@ public class ShimUtil {
         Map <String, Object> field = new HashMap<String, Object>();
         field.put("type", "number");
         field.put("name", dataType);
-        field.put("doc", description);
+        if (description != null) {
+            field.put("doc", description);
+        }
 
         Map <String, Object> schema = new HashMap<String, Object>();
         schema.put("type", "object");
