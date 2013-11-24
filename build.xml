@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+<project name="2Net Shim" basedir="." default="dist">
+	<!-- The version of application. -->
+    <property name="version" value="1.0.0" />
+	
+    <!-- Create the properties to be used throughout this build file. -->
+    <property name="dist" location="dist" />
+    <property name="bin" location="bin" />
+    <property name="doc" location="${dist}/doc"/>
+	<property name="home" location="." />
+    <property name="lib" location="lib" />
+    <property name="src" location="src" />
+
+    <!-- Create the list of necessary libraries for compiling. -->
+    <fileset id="dependencies.compile" dir="${lib}">
+        <include name="commons-codec-1.8.jar" />
+        <include name="Concordia-1.1.1.jar" />
+        <include name="fitbit4j-1.0.25.jar" />
+        <include name="jackson-annotations-2.2.3.jar" />
+        <include name="jackson-core-2.2.3.jar" />
+        <include name="jackson-databind-2.2.3.jar" />
+        <include name="joda-time-2.1.jar" />
+        <include name="omh-library-1.0.0.jar" />
+    	<include name="omh-shim-1.0.0.jar" />
+        <include name="servlet-api-3.0.jar" />
+        <include name="spring-web-3.2.1.RELEASE.jar" />
+    </fileset>
+    <path id="classpath.compile">
+        <fileset refid="dependencies.compile"/>
+    </path>
+	
+    <!-- Create the list of necessary libraries for testing. -->
+    <path id="classpath.test">
+        <fileset refid="dependencies.compile"/>
+        <pathelement location="${bin}"/>
+    </path>
+    
+    <!-- Create the list of necessary libraries for running. -->
+    <fileset id="dependencies.run" dir="${lib}">
+        <include name="commons-codec-1.8.jar" />
+        <include name="Concordia-1.1.1.jar" />
+        <include name="fitbit4j-1.0.25.jar" />
+        <include name="jackson-annotations-2.2.3.jar" />
+        <include name="jackson-core-2.2.3.jar" />
+        <include name="jackson-databind-2.2.3.jar" />
+        <include name="joda-time-2.1.jar" />
+        <include name="omh-library-1.0.0.jar" />
+    	<include name="omh-shim-1.0.0.jar" />
+        <include name="servlet-api-3.0.jar" />
+        <include name="spring-web-3.2.1.RELEASE.jar" />
+    </fileset>
+    
+    <!-- Cleans up all of the temporary files generated during building. -->
+    <target name="clean" depends="" description="Cleans the project.">
+    	<delete includeemptydirs="true">
+    		<fileset dir="${bin}" includes="**/*"/>
+    	</delete>
+        <delete dir="${dist}" />
+    </target>
+
+    <!-- Compiles the Java files into their class objects. -->
+    <target name="javac" description="Compiles Java files.">
+        <mkdir dir="${bin}"/>
+        <javac 
+            destdir="${bin}"
+            source="1.7"
+            target="1.7"
+            debug="true"
+            optimize="true"
+            failonerror="true" 
+            encoding="UTF-8"
+        	includeantruntime="false">
+            
+            <src path="${src}"/>
+            <classpath refid="classpath.compile"/>
+        </javac>
+    </target>
+    
+    <!-- Target to test the code. -->
+    <target
+        name="test"
+        depends="javac"
+        description="Executes the JUnit tests.">
+
+        <junit printsummary="yes" haltonfailure="yes">
+            <classpath refid="classpath.test"/>
+            <formatter type="plain" usefile="false"/>
+            <batchtest>
+                <fileset dir="${src}">
+                    <include name="**/*Test.java"/>
+                	<exclude name="**/*OnlineTest.java"/>
+                </fileset>
+            </batchtest>
+        </junit>
+    </target>
+
+    <!-- Builds the JARs. -->
+    <target
+        name="dist"
+        depends="javac"
+        description="Builds the JAR files, including the source and JavaDoc ones.">
+
+        <!-- Create the directory for the results if they don't exist. -->
+        <mkdir dir="${dist}" />
+
+        <!-- Create the JAR. -->
+        <jar
+        	destfile="${dist}/fitbit-shim-${version}.jar"
+            basedir="${bin}"
+        	excludes="**/Test.class,**/Dummy.class">
+        </jar>
+    </target>
+
+    <!-- A "catch-all" target for all other targets." -->
+    <target
+        name="all"
+        depends="clean,test,dist"
+        description="Creates all target elements." />
+</project>
