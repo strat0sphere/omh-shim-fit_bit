@@ -33,6 +33,7 @@ public class FitbitShimAuthorization implements ShimAuthorization {
 		final HttpServletRequest request) {
         FitbitShim fitbitShim = (FitbitShim)shim;
 
+        // Build the callback URL.
 		String authorizeId =
 		    ExternalAuthorizationInformation.getNewAuthorizeId();
 		Map<String, String> parameters = new HashMap<String, String>();
@@ -40,6 +41,7 @@ public class FitbitShimAuthorization implements ShimAuthorization {
 		String callbackUrl =
 		    AuthorizeDomainRequest.buildUrl(request, parameters);
 
+        // Build the authorization URL.
         LocalUserDetail localUserDetail = new LocalUserDetail(username);
         String authorizationUrlString = null;
         try {
@@ -60,6 +62,7 @@ public class FitbitShimAuthorization implements ShimAuthorization {
             throw new OmhException("The authorization URL is invalid.", e);
         }
 
+        // Build the preAuthState with the temporary token secret.
         Map<String, Object> preAuthState = new HashMap<String, Object>();
         preAuthState.put(
             OAuth1Authorization.KEY_EXTRAS_SECRET,
@@ -88,6 +91,7 @@ public class FitbitShimAuthorization implements ShimAuthorization {
             throw new OmhException("Unable to get shim", e);
         }
 
+        // Save the temporary token data to the credentials cache.
         LocalUserDetail localUserDetail = 
             new LocalUserDetail(information.getUsername());
 
@@ -103,6 +107,7 @@ public class FitbitShimAuthorization implements ShimAuthorization {
         shim.getCredentialsCache().saveResourceCredentials(
             localUserDetail, credentials);
 
+        // Fetch the permanent token.
         try {
             shim.getApiClientService().getTokenCredentials(localUserDetail);
         } catch (FitbitAPIException e) {
@@ -110,10 +115,12 @@ public class FitbitShimAuthorization implements ShimAuthorization {
                 "Unable to finish authorization with Fitbit", e);
         }
 
+        // Build the extras with the token secret.
         Map<String, Object> extras = new HashMap<String, Object>();
         extras.put(
             OAuth1Authorization.KEY_EXTRAS_SECRET, 
             credentials.getAccessTokenSecret());
+
         return new ExternalAuthorizationToken(
             information.getUsername(), information.getDomain(),
             credentials.getAccessToken(), null, Long.MAX_VALUE, extras);

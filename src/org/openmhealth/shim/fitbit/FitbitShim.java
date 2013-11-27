@@ -29,7 +29,6 @@ import org.openmhealth.shim.authorization.oauth1.OAuth1Authorization;
 import org.openmhealth.shim.exception.ShimDataException;
 import org.openmhealth.shim.exception.ShimSchemaException;
 import org.openmhealth.shim.Shim;
-import org.openmhealth.shim.ShimUtil;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -58,22 +57,43 @@ public class FitbitShim implements Shim {
      */
     private static final String SCHEMA_PREFIX = "omh:" + DOMAIN + ":";
 
+    /**
+     * Used internally by the Fitbit lib.
+     */
     private FitbitAPIEntityCache entityCache =
         new FitbitApiEntityCacheMapImpl();
-
     private FitbitApiCredentialsCache credentialsCache = 
         new FitbitApiCredentialsCacheMapImpl();
-
     private FitbitApiSubscriptionStorage subscriptionStore = 
         new FitbitApiSubscriptionStorageInMemoryImpl();
 
+    /**
+     * Fitbit API client object.
+     */
     private FitbitAPIClientService<FitbitApiClientAgent> apiClientService;
 
     /**
      * Interface for the data fetchers used in the dataFetcherMap below. One
-     * DataFetcher will be defined for each supported domain.
+     * DataFetcher will be defined for each supported API endpoint.
      */
     private interface DataFetcher {
+        /**
+         * Fetches the value of a single field for the given date.
+         *
+         * @param client
+         *        The Fitbit API client.
+         *
+         * @param localUserDetail
+         *        The Fitbit user to fetch the data for.
+         *
+         * @param date
+         *        The date of the data.
+         *
+         * @param field
+         *        The field to fetch.
+         *
+         * @return The value of the field.
+         */
         public Object dataForDay(
             FitbitAPIClientService<FitbitApiClientAgent> client,
             LocalUserDetail localUserDetail, DateTime date,
@@ -337,6 +357,7 @@ public class FitbitShim implements Shim {
         return outputData;
     }
 
+    // See the DataFetcher interface.
     private static Object activityForDay(
         FitbitAPIClientService<FitbitApiClientAgent> client,
         LocalUserDetail localUserDetail, DateTime date,
@@ -396,6 +417,7 @@ public class FitbitShim implements Shim {
         }
     }
 
+    // See the DataFetcher interface.
     private static Object sleepForDay(
         FitbitAPIClientService<FitbitApiClientAgent> client,
         LocalUserDetail localUserDetail, DateTime date,

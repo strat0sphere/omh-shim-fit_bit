@@ -1,4 +1,4 @@
-package org.openmhealth.shim;
+package org.openmhealth.shim.fitbit;
 
 import java.io.DataOutputStream;
 import java.io.InputStream;
