@@ -96,7 +96,7 @@ public class ShimUtil {
         }
 
         String schemaResourcePath =
-            "/schema/" + domainFromSchemaId(id) + "/" + version + "/"
+            "schema/" + domainFromSchemaId(id) + "/" + version + "/"
             + dataTypeFromSchemaId(id) + ".json";
 
         // Load and parse the schema from the schema file.
