@@ -7,7 +7,7 @@ A shim that runs inside of the [Shim DSU](https://github.com/openmhealth/shim) a
 
 | Source | ID | Version | Concordia Schema |
 | ---- | ---- | ---- | ---- |
-| Minutes Asleep | `omh:fitbit:time_asleep_minutes` | `1` | [Schema](https://go.omh.io/omh/v1/omh:fitbit:time_asleep_minutes/1/1) |
+| Minutes Asleep | `omh:fitbit:time_asleep_minutes` | `1` | [Schema](https://go.omh.io/omh/v1/omh:fitbit:time_asleep_minutes/1) |
 | Minutes Lightly Active | `omh:fitbit:lightly_active_minutes` | `1` | [Schema](https://go.omh.io/omh/v1/omh:fitbit:lightly_active_minutes/1) |
 | Floors Climbed | `omh:fitbit:floors` | `1` | [Schema](https://go.omh.io/omh/v1/omh:fitbit:floors/1) |
 | Elevation in Feet| `omh:fitbit:elevation_ft` | `1` | [Schema](https://go.omh.io/omh/v1/omh:fitbit:elevation_ft/1) |
