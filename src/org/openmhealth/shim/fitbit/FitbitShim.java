@@ -336,7 +336,7 @@ public class FitbitShim implements Shim {
         // Extract the data type and find the associated DataType.
         String dataTypeString = null;
         try {
-            dataTypeString = ShimUtil.dataTypeFromSchemaId(schemaId);
+            dataTypeString = Schema.dataTypeFromSchemaId(schemaId);
         }
         catch(ShimSchemaException e) {
             throw new ShimDataException("Invalid schema id: " + schemaId, e);
@@ -489,7 +489,7 @@ public class FitbitShim implements Shim {
     private DataType getDataType(final String schemaId) {
         String dataTypeString = null;
         try {
-            dataTypeString = ShimUtil.dataTypeFromSchemaId(schemaId);
+            dataTypeString = Schema.dataTypeFromSchemaId(schemaId);
         }
         catch(ShimSchemaException e) {
             throw new ShimDataException("Invalid schema id: " + schemaId, e);
