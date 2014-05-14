@@ -165,67 +165,6 @@ public class ShimUtil {
     }
 
     /**
-     * Fetches a URL.
-     *
-     * @param url
-     *        The URL to fetch.
-     *
-     * @param headers
-     *        Headers to send along with the request.
-     *
-     * @return An InputStream with the contents.
-     */
-    public static InputStream fetchUrl(
-        final URL url, 
-        final Map<String, String> headers,
-        final String data) {
-        InputStream inputStream = null;
-        try {
-            HttpURLConnection request = (HttpURLConnection)url.openConnection();
-
-            if (headers != null) {
-                for (String key : headers.keySet()) {
-                    request.setRequestProperty(key, headers.get(key));
-                }
-            }
-
-            if (data != null) {
-                request.setRequestMethod("POST");
-                request.setDoOutput(true);
-
-                DataOutputStream outputStream = 
-                    new DataOutputStream(request.getOutputStream());
-                outputStream.writeBytes(data);
-                outputStream.flush();
-            }
-
-            if (request.getResponseCode() != 200) {
-                throw new OmhException(
-                    "HTTP error code: " + request.getResponseCode());
-            }
-
-            inputStream = request.getInputStream();
-        }
-        catch(IOException e) {
-            throw new OmhException("HTTP request error", e);
-        }
-
-        return inputStream;
-    }
-
-    /**
-     * Fetches a URL.
-     *
-     * @param url
-     *        The URL to fetch.
-     *
-     * @return An InputStream with the contents.
-     */
-    public static InputStream fetchUrl(final URL url) {
-        return fetchUrl(url, null, null);
-    }
-
-    /**
      * Turn a generic Object into a JsonNode.
      *
      * @param object

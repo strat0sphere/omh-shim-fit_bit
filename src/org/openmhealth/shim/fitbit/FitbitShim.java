@@ -1,21 +1,10 @@
 package org.openmhealth.shim.fitbit;
 
-import java.io.InputStream;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import name.jenkins.paul.john.concordia.Concordia;
-import name.jenkins.paul.john.concordia.schema.ObjectSchema;
-import name.jenkins.paul.john.concordia.validator.ValidationController;
 
 import org.joda.time.DateTime;
 import org.openmhealth.reference.domain.ColumnList;
@@ -23,15 +12,13 @@ import org.openmhealth.reference.domain.Data;
 import org.openmhealth.reference.domain.ExternalAuthorizationToken;
 import org.openmhealth.reference.domain.MetaData;
 import org.openmhealth.reference.domain.Schema;
+import org.openmhealth.reference.domain.StandardMeasure;
 import org.openmhealth.reference.exception.OmhException;
+import org.openmhealth.shim.Shim;
 import org.openmhealth.shim.authorization.ShimAuthorization;
 import org.openmhealth.shim.authorization.oauth1.OAuth1Authorization;
 import org.openmhealth.shim.exception.ShimDataException;
 import org.openmhealth.shim.exception.ShimSchemaException;
-import org.openmhealth.shim.Shim;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.fitbit.api.FitbitAPIException;
 import com.fitbit.api.client.FitbitAPIEntityCache;
@@ -145,6 +132,8 @@ public class FitbitShim implements Shim {
 
         private final DataFetcher fetcher;
         private final Field field;
+        private final Boolean isStandardMeasure;
+        private final String unit;
 
         /**
          * @param fetcher
@@ -155,7 +144,9 @@ public class FitbitShim implements Shim {
          */
         public DataType(
             DataFetcher fetcher, 
-            Field field) {
+            Field field,
+            Boolean isStandardMeasure,
+            String unit) {
             if (fetcher == null) {
                 throw new OmhException("The fetcher is null.");
             }
@@ -165,10 +156,18 @@ public class FitbitShim implements Shim {
 
             this.fetcher = fetcher;
             this.field = field;
+            this.isStandardMeasure = isStandardMeasure;
+            this.unit = unit;
+        }
+
+        public DataType(DataFetcher fetcher, Field field) {
+            this(fetcher, field, false, null);
         }
 
         public DataFetcher getFetcher() { return fetcher; }
         public Field getField() { return field; }
+        public Boolean isStandardMeasure() { return isStandardMeasure; }
+        public String getUnit() { return unit; }
     }
 
     /**
@@ -182,8 +181,18 @@ public class FitbitShim implements Shim {
             "calories", 
             new DataType(activitiesFetcher, DataType.Field.CALORIES));
         dataTypeMap.put(
+            "calories-burned", 
+            new DataType(
+                activitiesFetcher, DataType.Field.CALORIES,
+                true, "kcal"));
+        dataTypeMap.put(
             "steps", 
             new DataType(activitiesFetcher, DataType.Field.STEPS));
+        dataTypeMap.put(
+            "number-of-steps", 
+            new DataType(
+                activitiesFetcher, DataType.Field.STEPS,
+                true, null));
         dataTypeMap.put(
             "distance_mi", 
             new DataType(activitiesFetcher, DataType.Field.DISTANCE));
@@ -206,7 +215,8 @@ public class FitbitShim implements Shim {
                 activitiesFetcher, DataType.Field.FAIRLY_ACTIVE_MINUTES));
         dataTypeMap.put(
             "very_active_minutes", 
-            new DataType(activitiesFetcher, DataType.Field.VERY_ACTIVE_MINUTES));
+            new DataType(
+                activitiesFetcher, DataType.Field.VERY_ACTIVE_MINUTES));
         dataTypeMap.put(
             "activity_calories", 
             new DataType(activitiesFetcher, DataType.Field.ACTIVITY_CALORIES));
@@ -261,7 +271,13 @@ public class FitbitShim implements Shim {
 	public List<String> getSchemaIds() {
         List<String> schemaIds = new ArrayList<String>();
         for (String key : dataTypeMap.keySet()) {
-            schemaIds.add(SCHEMA_PREFIX + key);
+            String prefix;
+            if (dataTypeMap.get(key).isStandardMeasure()) {
+                prefix = StandardMeasure.SCHEMA_PREFIX;
+            } else {
+                prefix = SCHEMA_PREFIX;
+            }
+            schemaIds.add(prefix + key);
         }
         return schemaIds;
     }
@@ -345,7 +361,23 @@ public class FitbitShim implements Shim {
                     apiClientService, localUserDetail, dateToFetch, 
                     dataType.getField());
             Map<String, Object> outputDatum = new HashMap<String, Object>();
-            outputDatum.put(dataTypeString, value);
+            if (dataType.isStandardMeasure()) {
+                Map<String, Object> effectiveTimeframe = 
+                    new HashMap<String, Object>();
+                effectiveTimeframe.put(
+                    StandardMeasure.JSON_KEY_TIMEFRAME_START_TIME,
+                    dateToFetch.getMillis() / 1000L);
+                outputDatum.put(
+                    StandardMeasure.JSON_KEY_EFFECTIVE_TIMEFRAME,
+                    effectiveTimeframe);
+
+                outputDatum.put(
+                    StandardMeasure.JSON_KEY_VALUE, value);
+                outputDatum.put(
+                    StandardMeasure.JSON_KEY_UNIT, dataType.getUnit());
+            } else {
+                outputDatum.put(dataTypeString, value);
+            }
 
             outputData.add(
                 new Data(
